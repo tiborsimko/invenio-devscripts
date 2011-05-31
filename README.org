@@ -1,0 +1,11 @@
+* About invenio-devscripts
+
+A collection of scripts useful for Invenio development.
+
+* License
+
+GNU General Public License version 2
+
+* See also
+
+- [[http://invenio-software.org/]]
