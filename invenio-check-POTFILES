@@ -1,0 +1,87 @@
+#!/usr/bin/env python
+#
+# Tibor Simko <tibor.simko@cern.ch>
+#
+# Copyright (C) 2011 CERN.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/>.
+
+"""
+A helper devscript to check I18N usage in Invenio.  Firstly, checks
+whether each file from POTFILES.in exists and whether it contains
+`_('.  Secondly, checks each Invenio source file that contains `_('
+whether it is well present in POTFILES.in.  For more information, see
+<https://github.com/tiborsimko/invenio-devscripts>.
+"""
+
+import string
+import os
+import sys
+
+# configuration section:
+CFG_INVENIO_SRCDIR = os.environ.get('CFG_INVENIO_SRCDIR',
+                                    os.path.join(os.environ.get('HOME'),
+                                                 'private/src/invenio'))
+
+
+# go to Invenio source directory:
+os.chdir(CFG_INVENIO_SRCDIR)
+
+errors_found = False
+
+# 1st check to see whether each file from POTFILES.in exists and
+# whether it contains `_(':
+files = open("po/POTFILES.in", "r").readlines()
+for file in files:
+    if not file.startswith("#"):
+        # proceed with file testing:
+        file = string.strip(file)
+        sys.stdout.flush()
+        # test file existence:
+        if not os.path.exists(file):
+            errors_found = True
+            print '[ERROR] ' + file + " does not exist"
+        # test file usage of _(
+        errcode = os.system("""grep -q '_(.*)' %s""" % file)
+        if errcode == 0:
+            pass # okay
+        else:
+            pass
+            #print file + " does not use _(...)"
+
+
+# 2nd check to see whether each Invenio source file that contains `_('
+# is well present in POTFILES.in:
+files = os.popen("find . -type f -name '*.py'").readlines()
+files.extend(os.popen("find . -type f -name '*.in'").readlines())
+files.extend(os.popen("find . -type f -name '*.webdoc'").readlines())
+files.extend(os.popen("find . -type f -name '*.tpl'").readlines())
+files.extend(os.popen("find . -type f -name '*.bft'").readlines())
+for file in files:
+    if file.startswith("./"):
+        file = file[2:]
+    if not file.startswith("build/") and not file.startswith("po/"):
+        file = string.strip(file)
+        # test if file uses _(:
+        cmd = "grep -q -e \"_([\\\"\\\'].*[\\\"\\\'])\" %s" % file
+        errcode = os.system(cmd)
+        if errcode == 0:
+            # test if file is in POTFILES.in
+            errcode = os.system("grep -q '%s' po/POTFILES.in" % file)
+            if errcode != 0:
+                errors_found = True
+                print '[ERROR] ' + file + " uses _(...) but is not in POTFILES.in"
+
+if errors_found:
+    sys.exit(1)
