@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+#
+# Tibor Simko <tibor.simko@cern.ch>
+#
+# Copyright (C) 2011 CERN.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/>.
+
+"""
+A helper devscript to check whether all git committers are well listed
+in the AUTHORS or THANKS file.  For more information, see
+<https://github.com/tiborsimko/invenio-devscripts>.
+"""
+
+import commands
+import os
+import sys
+
+# configuration section:
+CFG_INVENIO_SRCDIR = os.environ.get('CFG_INVENIO_SRCDIR',
+                                    os.path.join(os.environ.get('HOME'),
+                                                 'private/src/invenio'))
+
+# go to Invenio source directory:
+os.chdir(CFG_INVENIO_SRCDIR)
+
+# detect all git committers:
+authors = []
+out = commands.getoutput('git log | grep "^Author:" | sort | uniq')
+for line in out.split('\n'):
+    authors.append(line[8:])
+
+# check if they are in AUTHORS or THANKS file:
+errors_found = False
+for author in authors:
+    out = commands.getoutput('grep -c "%s" AUTHORS' % author.split(' <', 1)[0])
+    if out == '0':
+        out = commands.getoutput('grep -c "%s" THANKS' % author.split(' <', 1)[0])
+        if out == '0':
+            errors_found = True
+            print "[ERROR] %s does not seem to be in AUTHORS or THANKS file." % author
+
+if errors_found:
+    sys.exit(1)
