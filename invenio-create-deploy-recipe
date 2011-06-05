@@ -1,0 +1,535 @@
+#!/usr/bin/env python
+#
+# Tibor Simko <tibor.simko@cern.ch>
+#
+# Copyright (C) 2011 CERN.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/>.
+
+"""
+Usage: invenio-create-deploy-recipe [options] [sha1a[..sha1b]][,sha1c[..sha1d]]
+
+Create deploy recipe for Invenio sites out of commit ID or commit ID
+range.  (If not supplied, take latest commit in current branch.)  If
+another commit ID or commit ID range is given after a comma, then
+deploy the second repository after the first.
+
+General options:
+  -h, --help           Print this help.
+  -v, --verbose=LEVEL  Verbose level (0=min, 1=default, 9=max).
+
+Target options:
+  --cds                Generate recipe for CDS.
+  --inspire            Generate recipe for INSPIRE.
+
+Deployment options:
+  --via-install        Generate recipe with install instructions. [default]
+  --via-filecopy       Generate recipe with file copy, not `make install'.
+
+Optional environment variables:
+  CFG_INVENIO_SRCDIR   Path to local Invenio sources. [~/private/src/invenio]
+  CFG_INVENIO_USER     User name of the target Apache process. [apache]
+
+Examples:
+ $ invenio-create-deploy-recipe --inspire --via-filecopy
+ $ invenio-create-deploy-recipe --cds HEAD~10..
+ $ invenio-create-deploy-recipe --inspire HEAD,HEAD
+"""
+
+import os
+import sys
+import subprocess
+
+
+if os.environ.get('CFG_INVENIO_SRCDIR'):
+    CFG_INVENIO_SRCDIR = os.environ.get('CFG_INVENIO_SRCDIR')
+else:
+    CFG_INVENIO_SRCDIR = os.path.join(os.environ.get('HOME'),
+                                      'private/src/invenio')
+
+if os.environ.get('CFG_INVENIO_USER'):
+    CFG_INVENIO_USER = os.environ.get('CFG_INVENIO_USER')
+else:
+    CFG_INVENIO_USER = 'apache'
+
+
+if '--cds' in sys.argv:
+    CFG_PREFIX = '/opt/cdsweb'
+    CFG_MSG_HEADING = 'CDS logbook: PCUDSSX1502:'
+    CFG_MSG_MACHINE = 'on PROD (PCUDSSX1502)'
+elif '--inspire' in sys.argv:
+    CFG_PREFIX = '/opt/cds-invenio'
+    CFG_MSG_HEADING = 'INSPIRE logbook:'
+    CFG_MSG_MACHINE = 'on DEV (PCUDSSW1508), TEST (PCUDSSW1505)' + \
+                      ' and PROD (PCUDSSW150[6-7])'
+else:
+    CFG_PREFIX = '/opt/invenio'
+    CFG_MSG_HEADING = 'logbook:'
+    CFG_MSG_MACHINE = 'on the server'
+
+
+def get_target_source_pathname(local_source_pathname):
+    """
+    Helper function that returns source pathname on target system from
+    the pathname on the local system.
+    """
+    out = local_source_pathname
+    return out.replace('/home/simko/private','/opt/simko')
+
+
+def get_toplevel_dir(dirname):
+    """
+    Return git repository's toplevel directory given that DIRNAME is
+    part of that repository somewhere down the line.
+    """
+    toplevel_dirname=''
+    os.chdir(dirname)
+    process = subprocess.Popen(['git', 'rev-parse', '--show-toplevel'],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    out, err = process.communicate()
+    if err:
+        print "[ERROR]", err
+    if out:
+        toplevel_dirname = out.strip() # pylint: disable=E1103
+    return toplevel_dirname
+
+
+def get_commit_msg(commitid, repodir):
+    """
+    Return commit message corresponding to COMMITID which can be
+    either a SHA1 or range SHA1a..SHA1b.
+    """
+    msg_commit = ''
+    os.chdir(repodir)
+    if '..' in commitid:
+        process = subprocess.Popen(['git', 'log', commitid, '--format=oneline'],
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+    else:
+        process = subprocess.Popen(['git', 'log', '-n1', commitid, '--stat'],
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+    out, err = process.communicate()
+    if err:
+        print "[ERROR]", err
+    if out:
+        msg_commit = out.strip() # pylint: disable=E1103
+    return msg_commit
+
+
+def get_commit_headline(commitid, repodir):
+    """
+    Return commit message headline corresponding to COMMITID which can be
+    either a SHA1 or range SHA1a..SHA1b.
+    """
+    msg_headline = ''
+    os.chdir(repodir)
+    if '..' in commitid:
+        sha1a, sha1b = commitid.split('..')
+        return get_commit_headline(sha1b, repodir)
+    else:
+        process = subprocess.Popen(['git', 'log', '-n1',
+                                    '--format=oneline', commitid],
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+    out, err = process.communicate()
+    if err:
+        print "[ERROR]", err
+    if out:
+        msg_headline = out[40:]
+    return msg_headline.strip()
+
+
+def get_commit_files(commitid, repodir):
+    """
+    Return list of files modified in commit COMMITID which can be
+    either a SHA1 or range SHA1a..SHA1b.
+    """
+    dfiles = {}
+    os.chdir(repodir)
+    process = subprocess.Popen(['git', 'show', '--pretty=format:',
+                                '--name-only', commitid],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    out, err = process.communicate()
+    if err:
+        print "[ERROR]", err
+    if out:
+        lines = out.split('\n') # pylint: disable=E1103
+        for line in lines:
+            if line:
+                dfiles[line] = 1
+    lfiles = dfiles.keys()
+    lfiles.sort()
+    if '--verbose' in sys.argv:
+        print lfiles
+    return lfiles
+
+
+def detect_commitid(cliargs):
+    """
+    Detect wanted commit ID or commit ID range we should deploy, as
+    was passed by the user via CLI parameters in CLIARGS.
+    """
+    cliargs = [x for x in cliargs if not x.startswith('-')]
+    if len(cliargs) == 2:
+        commitid = cliargs[1]
+    else: # if nothing was asked for, take tip of the current branch
+        commitid = 'HEAD'
+    if commitid.endswith('..'):
+        # add branch tip explicitly, if omitted:
+        commitid += 'HEAD'
+    return commitid
+
+
+def normalise_commitid(commitid, repodir):
+    """
+    Normalise COMMITID's SHA1.
+
+    COMMITID may be either a `SHA1' or `SHA1a..SHA1b' or already, or
+    it may be some reference like `HEAD~20' or tag like `v1.0.0-rc0'.
+    These values are typically passed via command line by the user.
+
+    The final `SHA1' or `SHA1a..SHA1b' output values are then
+    normalised to the first 7 characters.
+    """
+
+    if '..' in commitid: # we have commit range situation
+        commitida, commitidb = commitid.split('..', 1)
+        return normalise_commitid(commitida, repodir) + '..' + \
+               normalise_commitid(commitidb, repodir)
+
+    # we have single commit situation, so detect commitid's sha1:
+    os.chdir(repodir)
+    process = subprocess.Popen(['git', 'log', commitid, '-n1',
+                                '--pretty=oneline'],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    out, err = process.communicate()
+    if err:
+        print "[ERROR]", err
+        if 'Not a git repository' in err:
+            print '[ERROR] Either invoke this command in an Invenio repository, ' + \
+                  'or else supply two comma-separated commit IDs.'
+            print '[ERROR] See `%s --help\'.' % sys.argv[0]
+            sys.exit(1)
+    if out:
+        return out.split()[0].strip()[:7] # pylint: disable=E1103
+
+    raise StandardError('[ERROR] Whoops, this should not have happened.')
+
+
+def detect_db_changes(commitid, repodir):
+    """
+    Detect whether there were DB schema changes in COMMITID which can
+    be either a SHA1 or range SHA1a..SHA1b.
+    """
+    os.chdir(repodir)
+    if '..' in commitid:
+        process = subprocess.Popen(['git', 'diff', commitid,
+                                    '--', 'modules/miscutil/sql/tabcreate.sql'],
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+    else:
+        process = subprocess.Popen(['git', 'show', commitid,
+                                    '--', 'modules/miscutil/sql/tabcreate.sql'],
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+    out, err = process.communicate()
+    if err:
+        print "[ERROR]", err
+    if out:
+        print '[ERROR] Database changes needed!'
+        print
+        print '#+BEGIN_EXAMPLE'
+        print out
+        print '#+END_EXAMPLE'
+
+
+def detect_file_installation_place(afile):
+    """
+    Detect where to install file AFILE depending on either file
+    existence in target directory tree, or via guesswork depending on
+    the file extension (Python files here, BTFs there, etc.)
+
+    If non-installable (e.g. Makefile), then return empty string.
+
+    If not known how to install it, then return
+    `/tmp/ERROR-UNKNOWN-DESTINATION-PLEASE-INSPECT-AND-ENRICH-RULES'.
+    """
+
+    afile_name, afile_extension = os.path.splitext(afile)
+    afile_basename = os.path.basename(afile)
+
+    # 1st: try to find the file pathname:
+    process = subprocess.Popen(['find', CFG_PREFIX, '-name', afile_basename],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+    out, err = process.communicate()
+    if out:
+        return out.strip() # pylint: disable=E1103
+
+    # 2nd: if not found, try to guess by extension:
+    if not afile_extension:
+        return '/tmp/ERROR-UNKNOWN-DESTINATION-PLEASE-INSPECT-AND-ENRICH-RULES'
+    elif afile_extension in ('.py'):
+        return CFG_PREFIX + '/lib/python/invenio/'
+    elif afile_extension in ('.js'):
+        return CFG_PREFIX + '/var/www/js/'
+    elif afile_extension in ('.css', '.png', '.gif', '.jpg'):
+        return CFG_PREFIX + '/var/www/img/'
+    elif afile_extension in ('.bft'):
+        return CFG_PREFIX + '/etc/bibformat/format_templates/'
+    elif afile_extension in ('.bfo'):
+        return CFG_PREFIX + '/etc/bibformat/output_formats/'
+    elif afile_extension in ('.conf'):
+        return CFG_PREFIX + '/etc/'
+    elif afile_extension in ('.webdoc'):
+        return CFG_PREFIX + '/lib/webdoc/invenio/'
+    elif afile_extension in ('.sql'):
+        return CFG_PREFIX + '/lib/sql/invenio/'
+    elif afile_extension in ('.html'):
+        return CFG_PREFIX + '/lib/webtest/invenio/'
+    elif afile_extension in ('.wsgi'):
+        return CFG_PREFIX + '/var/www-wsgi/'
+    elif afile_extension in ('.po'):
+        return '' # cannot install PO files, need to create GMO ones
+    elif afile_extension in ('.ac', '.am', '.m4', '.in', '.rpath'):
+        return '' # ignore autotools files like Makefile.am and the like
+    else:
+        return '/tmp/ERROR-UNKNOWN-DESTINATION-PLEASE-INSPECT-AND-ENRICH-RULES'
+
+
+def write_single_repo_deploy_recipe_header(commitid, repodir):
+    """
+    Write recipe header for deploying COMMITID from REPODIR.
+    """
+    print """\
+%(heading)s deployed %(patch)s (%(summary)s)
+""" % {'heading': CFG_MSG_HEADING, 'patch': commitid,
+       'summary': get_commit_headline(commitid, repodir)}
+
+    if '..' in commitid:
+        print "Deployed patches:"
+    else:
+        print "Deployed patch:"
+    print """\
+
+#+BEGIN_EXAMPLE
+%(msg_commit)s
+#+END_EXAMPLE
+
+%(txt)s:
+""" % {'msg_commit': get_commit_msg(commitid, repodir), 'txt': CFG_MSG_MACHINE}
+
+
+def write_single_repo_deploy_recipe_body(commitid, repodir):
+    """
+    Write recipe body for deploying COMMITID from REPODIR.
+    """
+    if '--via-filecopy' in sys.argv:
+        write_single_repo_deploy_recipe_body_via_filecopy(commitid, repodir)
+    elif '--via-install' in sys.argv:
+        write_single_repo_deploy_recipe_body_via_install(commitid, repodir)
+    else:
+        write_single_repo_deploy_recipe_body_via_install(commitid, repodir)
+    detect_db_changes(commitid, repodir)
+
+
+def write_single_repo_deploy_recipe_body_via_install(commitid, repodir):
+    """
+    Write recipe body for deploying commitid from REPODIR via make install.
+    """
+    print """\
+#+BEGIN_SRC sh
+sudo -u %(apache)s /usr/bin/id
+cd %(repodir)s/%(subdir)s
+git pull
+make -s
+sudo -u %(apache)s make install
+sudo -u %(apache)s %(prefixdir)s/bin/inveniocfg --update-all
+sudo /etc/init.d/httpd graceful
+#+END_SRC
+""" % {'repodir': get_target_source_pathname(repodir),
+       'apache': CFG_INVENIO_USER,
+       'subdir': os.path.dirname(os.path.commonprefix(get_commit_files(commitid,
+                 repodir))),
+       'prefixdir': CFG_PREFIX}
+
+
+def write_single_repo_deploy_recipe_body_via_filecopy(commitid, repodir):
+    """
+    Write recipe body for deploying commitid from REPODIR via file copy.
+    """
+    l_file_targetdir = [] # list of tuples (afile, afile_target_dir) to install
+    for afile in get_commit_files(commitid, repodir):
+        afile_target_dir = detect_file_installation_place(afile)
+        if afile_target_dir:
+            l_file_targetdir.append((afile, afile_target_dir))
+    print """\
+#+BEGIN_SRC sh
+sudo -u %(apache)s /usr/bin/id
+cd %(repodir)s
+git pull""" % {'repodir': get_target_source_pathname(repodir),
+               'apache': CFG_INVENIO_USER,}
+    for afile, afile_target_dir in l_file_targetdir:
+        print """\
+colordiff %(afile)s %(afile_target_dir)s""" % \
+        {'afile': afile, 'afile_target_dir': afile_target_dir}
+    for afile, afile_target_dir in l_file_targetdir:
+        print """\
+sudo -u %(apache)s cp %(afile)s %(afile_target_dir)s""" % \
+        {'afile': afile, 'afile_target_dir': afile_target_dir,
+         'apache': CFG_INVENIO_USER}
+    for afile, afile_target_dir in l_file_targetdir:
+        print """\
+colordiff %(afile)s %(afile_target_dir)s""" % \
+        {'afile': afile, 'afile_target_dir': afile_target_dir}
+    print """\
+sudo /etc/init.d/httpd graceful
+#+END_SRC
+"""
+
+
+def write_twin_repo_deploy_recipe_header(commitid1, repodir1,
+                                         commitid2, repodir2):
+    """
+    Write recipe header for deploying COMMITID1 from REPODIR1 followed by
+    COMMITID2 from REPODIR2 via full re-installation.
+    """
+    print """\
+%(heading)s upgraded DEV/TEST/PROD to latest master (%(reponame1)s %(patch1)s, %(reponame2)s %(patch2)s)
+""" % {'heading': CFG_MSG_HEADING, 'reponame1': os.path.basename(repodir1),
+       'patch1': commitid1, 'reponame2' : os.path.basename(repodir2),
+       'patch2': commitid2}
+    return
+
+
+def write_twin_repo_deploy_recipe_body(commitid1, repodir1,
+                                       commitid2, repodir2):
+    """
+    Write recipe body for deploying COMMITID1 from REPODIR1 followed
+    by COMMITID2 from REPODIR2 via full re-installation.
+
+    FIXME: This function generates recipe for INSPIRE site at the
+    moment only.  Not generalised yet.
+    """
+    print """\
+Upgraded DEV (PCUDSSW1508), TEST (PCUDSSW1505) and PROD
+(PCUDSSW150[6-7]) to latest git master sources (%(reponame1)s
+%(commitid1)s, %(reponame2)s %(commitid2)s).
+
+First, wait for bibsched jobs to stop and put the queue to manual mode
+(on the first worker node).  Then run upgrade in the following way:
+
+(BTW, on PROD, where we run with two worker nodes, inactivate one node
+in the load balancer and update it, then inactivate the other node and
+update it, so that we have no service interruption and no alarms
+raised:)
+
+#+BEGIN_SRC sh
+sudo -u %(apache)s /usr/bin/id
+cd %(repodir1)s
+git pull
+make -s
+sudo -u %(apache)s make install
+sudo -u %(apache)s %(prefixdir)s/bin/inveniocfg --update-all
+sudo %(prefixdir)s/bin/inveniocfg --update-dbexec
+cd %(repodir2)s
+git pull
+sudo -u %(apache)s make install
+#+END_SRC
+
+On DEV, uglify interface:
+
+#+BEGIN_SRC sh
+sudo -u %(apache)s make reset-ugly-ui
+#+END_SRC
+
+On TEST, uglify interface like this:
+
+#+BEGIN_SRC sh
+sudo -u %(apache)s make reset-ugly-ui
+sudo -u %(apache)s cp webstyle/inspire_logo_beta_ugly_test.png \
+     %(prefixdir)s/var/www/img/inspire_logo_beta.png
+#+END_SRC
+
+Now restart Apache:
+
+#+BEGIN_SRC sh
+sudo /etc/init.d/httpd restart
+#+END_SRC
+
+Note that on PROD we have higher safety for =dbexec= which is to be
+reset now:
+
+#+BEGIN_SRC sh
+sudo %(prefixdir)s/bin/inveniocfg --update-dbexec
+sudo chmod go-rxw %(prefixdir)s/bin/dbexec*
+sudo chown root.root %(prefixdir)s/bin/dbexec*
+ls -l %(prefixdir)s/bin/dbexec*
+#+END_SRC
+
+Also on PROD the bibsched rights on the second worker node should be
+revoked:
+
+#+BEGIN_SRC sh
+sudo chmod a-rwx %(prefixdir)s/bin/bibsched
+ls -l %(prefixdir)s/bin/bibsched
+#+END_SRC
+
+Now put the bibsched queue back to automatic mode on the first worker
+node and we are done.
+""" % {'repodir1': get_target_source_pathname(repodir1),
+       'reponame1': os.path.basename(repodir1),
+       'commitid1': commitid1,
+       'repodir2': get_target_source_pathname(repodir2),
+       'reponame2': os.path.basename(repodir2),
+       'commitid2': commitid2,
+       'apache': CFG_INVENIO_USER,
+       'prefixdir': CFG_PREFIX}
+
+
+def main():
+    """
+    Do the job.
+    """
+    if '--help' in sys.argv or '-h' in sys.argv:
+        print __doc__
+        sys.exit(0)
+    commitid = detect_commitid(sys.argv)
+    if ',' in commitid:
+        # deploying from two repositories: FIXME: 1st is assumed to be
+        # Invenio, 2nd assumed to be INSPIRE
+        repodir1 = CFG_INVENIO_SRCDIR
+        repodir2 = os.path.join(os.path.dirname(repodir1), 'inspire')
+        commitid1, commitid2 = commitid.split(',', 1)
+        commitid1 = normalise_commitid(commitid1, repodir1)
+        commitid2 = normalise_commitid(commitid2, repodir2)
+        write_twin_repo_deploy_recipe_header(commitid1, repodir1,
+                                             commitid2, repodir2)
+        write_twin_repo_deploy_recipe_body(commitid1, repodir1,
+                                           commitid2, repodir2)
+    else:
+        # deploying from single repository:
+        repodir = get_toplevel_dir(os.getcwd())
+        commitid1 = normalise_commitid(commitid, repodir)
+        write_single_repo_deploy_recipe_header(commitid1, repodir)
+        write_single_repo_deploy_recipe_body(commitid, repodir)
+    return
+
+
+if __name__ == '__main__':
+    main()
