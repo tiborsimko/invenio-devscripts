@@ -1,11 +1,172 @@
+#+TITLE: Invenio Devscripts
+#+AUTHOR: Tibor Simko
+#+EMAIL: tibor.simko@cern.ch
+#+DATE: <2011-06-05 Sun>
+#+DESCRIPTION: A collection of scripts useful for Invenio development.
+#+KEYWORDS: invenio, development, scripts
+#+LANGUAGE: en
+
 * About invenio-devscripts
 
-A collection of scripts useful for Invenio development.
+~invenio-devscripts~ repository contains a collection of scripts
+useful when hacking on [[http://invenio-software.org/][Invenio]].
+
+* Contents
+
+- invenio-make-install :: install (parts of) source tree and restart
+     Invenio WSGI application
+- invenio-check-kwalitee :: check code kwalitee of source files
+- invenio-check-branch :: check code kwalitee changes between branches
+- invenio-recreate-demo-site :: recreate demo site
+- invenio-retest-demo-site :: rerun test suite on recreated demo site
+- invenio-create-deploy-recipe :: create deploy recipes
+- invenio-check-AUTHORS :: check whether all committers are well
+     present in AUTHORS or THANKS files
+- invenio-check-POTFILES :: check whether all sources files that
+     contain I18N phrases are well present in POTFILES.in
+- invenio-delete-old-git-tags :: delete old CVS-times tags from git
+     repository
+
+* Installation
+
+Put the scripts somewhere under your =PATH=.  For example, if you
+clone this repository into =$HOME/private/src/invenio-devscripts=,
+then in your =$HOME/.bashrc= you can say:
+
+: export PATH=$HOME/private/src/invenio-devscripts:$PATH
+
+You may also want to configure the following environment variables:
+
+| Variable               | Documentation                     | Default value         |
+| CFG_INVENIO_SRCDIR     | where are Invenio sources?        | ~/private/src/invenio |
+| CFG_INVENIO_PREFIX     | where is Invenio installed?       | /opt/invenio          |
+| CFG_INVENIO_HOSTNAME   | what is allowed hostname?         | pcuds07               |
+| CFG_INVENIO_DOMAINNAME | what is our domain name?          | cern.ch               |
+| CFG_INVENIO_USER       | under which user ID Invenio runs? | www-data              |
+| CFG_INVENIO_ADMIN      | who is admin of this Instance?    | tibor.simko@cern.ch   |
+
+or else call the scripts "on the spot" like this:
+
+: CFG_INVENIO_HOSTNAME=newbox invenio-retest-demo-site --yes-i-know
+
+Note that devscripts assume that you have a running Invenio instance
+installed in =CFG_INVENIO_PREFIX= on the box.  If you did not have
+Invenio installed yet, then follow pages like [[http://invenio-software.org/wiki/Installation/InvenioOnDebian][Invenio on Debian]]; it
+takes only a few minutes to install Invenio for the first time.
+
+* Usage
+
+** invenio-make-install
+
+This is the most frequently used devscript.  Depending on where in the
+Invenio source tree it is called from, the devscript installs the
+current part of the source tree and restarts Invenio WSGI application.
+For example, when you are hacking on WebMessage Python sources files,
+you can deploy your changes to the running Invenio instance in no
+time.  (Well, in 0.11 sec, on my box.)
+
+Because this devscript is so frequently used, it is advantageous to
+create shortcuts for it, for example a shell alias called =mi= (for
+``make install''):
+
+: alias mi="$HOME/private/src/invenio-devscripts/invenio-make-install"
+
+and a hot key for your preferred editor; an example for Emacs:
+
+#+BEGIN_SRC emacs-lisp
+(defun tibor-invenio-make-install ()
+  "Launch invenio-make-install script on the current buffer."
+  (interactive)
+  (save-buffer)
+  (shell-command "~/private/src/invenio-devscripts/invenio-make-install"))
+(global-set-key (kbd "C-c i") 'tibor-invenio-make-install)
+#+END_SRC
+
+This allows you to press =C-c i= to install your edits.
+
+** invenio-check-kwalitee
+
+This devscript is also very frequently used.  When hacking on say
+=webmessage_dblayer.py=, calling this script will detect the most
+common code kwalitee problems:
+
+: invenio-check-kwalitee --check-some webmessage_dblayer.py
+
+Because this devscript is so frequently used, you may again want to
+create a short shell alias for it, say =kw= (=for ``kwalitee''):
+
+: alias kw="$HOME/private/src/invenio-devscripts/invenio-check-kwalitee --check-some"
+
+and a hot key for your preferred editor; an example for Emacs:
+
+#+BEGIN_SRC emacs-lisp
+(defun tibor-invenio-check-kwalitee ()
+  "Launch Invenio code kwalitee check on the current buffer."
+  (interactive)
+  (let* ((input-file (buffer-file-name (current-buffer)))
+         (command (concat "~/private/src/invenio-devscripts/invenio-check-kwalitee "
+                          "--check-some "
+                          input-file)))
+    (save-some-buffers (not compilation-ask-about-save) nil)
+    (if (and input-file (string-equal (file-name-extension input-file) "py"))
+        (compilation-start command)
+        (message "[ERROR] Cannot run Invenio code kwalitee check on non-Python buffers."))))
+(global-set-key (kbd "C-c k") 'tibor-invenio-check-kwalitee)
+#+END_SRC
+
+This allows you to press =C-c k= to see the list of potential code
+kwalitee problems in your buffer and to press the usual =C-x `= to
+jump from one problematic location to the next in order to fix them.
+
+** invenio-check-branch
+
+** invenio-recreate-demo-site
+
+** invenio-retest-demo-site
+
+** invenio-create-deploy-recipe
+
+** invenio-check-AUTHORS
+
+Checks whether all git committers are well listed in the AUTHORS or
+THANKS file.
+
+This is used mostly before making releases by people wearing system
+integration and release management hats.
+
+** invenio-check-POTFILES
+
+Check I18N usage in Invenio.  Firstly, checks whether each file from
+POTFILES.in exists and whether it contains =_(=.  Secondly, checks
+each Invenio source file that contains =_(= whether it is well present
+in POTFILES.in.
+
+This is used mostly before making releases or massive PO file updates
+by people wearing system integration and release management hats.
+
+** invenio-delete-old-git-tags
+
+A helper script to delete old CVS-era tags from Invenio source code
+repository.  Some developers still have the old tags present in their
+personal repositories, so when you fetch from them, the old CVS style
+tags may reappear from time to time.  When this happens, running this
+script will delete them.
 
 * License
 
-GNU General Public License version 2
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, see [[http://www.gnu.org/licenses/]].
 
 * See also
 
-- [[http://invenio-software.org/]]
+- [[http://invenio-software.org/][Invenio]]
