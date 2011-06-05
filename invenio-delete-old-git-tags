@@ -1,0 +1,54 @@
+#!/bin/sh
+#
+# A helper script to delete old CVS-era tags from Invenio source code
+# repository.  Some developers still use them, so when people fetch
+# from them, the old CVS style tags may get recreated from time to
+# time.  When this happens, running this script will delete them.  For
+# more information, see
+# <https://github.com/tiborsimko/invenio-devscripts>.
+#
+# Tibor Simko <tibor.simko@cern.ch>
+#
+# Copyright (C) 2011 CERN.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/>.
+
+# sanity check: CLI confirmation
+if [ "$1" != "--yes-i-know" ]; then
+    echo "[ERROR] You did not use --yes-i-know.  Not going to delete git tags."
+    exit
+fi
+
+echo "[INFO] Going to delete old git tags..."
+
+git tag -d CDSWARE_RELEASE_0_0_9
+git tag -d RELEASE_0_1_0
+git tag -d RELEASE_0_1_1
+git tag -d RELEASE_0_1_2
+git tag -d RELEASE_0_3_0
+git tag -d RELEASE_0_3_1
+git tag -d RELEASE_0_3_2
+git tag -d RELEASE_0_3_3
+git tag -d RELEASE_0_7_0
+git tag -d RELEASE_0_7_1
+git tag -d RELEASE_0_90_0
+git tag -d RELEASE_0_90_1
+git tag -d RELEASE_0_92_0
+git tag -d RELEASE_0_92_1
+git tag -d RELEASE_0_99_0
+git tag -d RELEASE_0_99_1
+git tag -d last_version_without_bibsched
+git tag -d release_0_01
+
+echo "[INFO] Done."
