@@ -1,0 +1,106 @@
+#!/bin/bash
+#
+# Usage: invenio-check-branch some-base-branch some-topic-branch
+#
+# Run Invenio kwalitee tests for files changed in some-topic-branch
+# when compared to some-base-branch and compare the results.  Useful
+# for checking before merging whether a feature branch would not
+# introduce into master some more code kwalitee problems.
+#
+# Tibor Simko <tibor.simko@cern.ch>
+#
+# Copyright (C) 2011 CERN.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/>.
+
+# configuration
+CFG_INVENIO_SRCDIR=${CFG_INVENIO_SRCDIR:=~/private/src/invenio}
+
+# read arguments:
+if [ $# -lt 2 ]; then
+    echo "Usage: $(basename $0) some-base-branch some-topic-branch"
+    exit 1
+fi
+BRANCHOLD=$1
+BRANCHNEW=$2
+
+# check possible merge conflict leftovers:
+nmerge=$(git log $BRANCHOLD..$BRANCHNEW -p | grep -c -E '^\+[><=]{7}(\s|$)')
+if [ $nmerge -gt 0 ]; then
+    echo '[ERROR] Found possible merge conflict leftovers:'
+    git log $BRANCHOLD..$BRANCHNEW -p | grep -E '^\+[><=]{7}(\s|$)'
+    echo '[ERROR] Exiting.'
+    exit 1
+fi
+
+# set up temporary files:
+yyyymmddhhmmss=$(date +"%Y-%m-%d-%H-%M-%S")
+kwaliteefileold=/tmp/$(basename $0)-$yyyymmddhhmmss-$BRANCHOLD
+kwaliteefilenew=/tmp/$(basename $0)-$yyyymmddhhmmss-$BRANCHNEW
+
+# detect which files to check:
+checkfiles=$(git log $BRANCHOLD..$BRANCHNEW --pretty=format: --name-only | grep '\.py')
+echo "[INFO] Going to check the following files from $BRANCHOLD to $BRANCHNEW:"
+echo $checkfiles
+
+# save current branch to be able to come back to it:
+currentdirectory=$(pwd)
+currentbranch=$(git branch | grep \* | sed -e s/[\ \*]//g)
+cd $CFG_INVENIO_SRCDIR
+
+# run kwalitee checks on old branch, ignoring line numbers:
+echo "[INFO] Installing branch $BRANCHOLD ..."
+git checkout $BRANCHOLD
+invenio-make-install
+#pylint -E $checkfiles >& /dev/null
+#if [ $? -ne 0 ]; then
+#    echo "[ERROR] pylint -e does not pass."
+#    exit 1
+#fi
+invenio-check-kwalitee -q --check-some $checkfiles | sed 's/^.*[0-9]://' | sed 's/line [0-9][0-9]*//' > $kwaliteefileold
+
+# run kwalitee checks on new branch, ignoring line numbers:
+echo "[INFO] Installing branch $BRANCHNEW ..."
+git checkout $BRANCHNEW
+invenio-make-install
+#pylint -E $checkfiles >& /dev/null
+#if [ $? -ne 0 ]; then
+#    echo "[ERROR] pylint -e does not pass."
+#    exit 1
+#fi
+invenio-check-kwalitee -q --check-some $checkfiles | sed 's/^.*[0-9]://' | sed 's/line [0-9][0-9]*//' > $kwaliteefilenew
+
+# return to the branch we started from:
+echo "[INFO] Reinstalling the original branch $currentbranch ..."
+cd $currentdirectory
+git checkout $currentbranch
+invenio-make-install
+
+# compare number of warnings found:
+echo "[INFO] Comparing kwalitee of $checkfiles between $BRANCHOLD and $BRANCHNEW ..."
+nold=$(wc -l $kwaliteefileold | awk '{print $1;}')
+nnew=$(wc -l $kwaliteefilenew | awk '{print $1;}')
+if [ $nold -gt $nnew ]; then
+    echo "[INFO] OK, less warnings in branch ${BRANCHNEW}.  Good!"
+    exit 0
+fi
+
+# compare contents of warnings found:
+colordiff -u $kwaliteefileold $kwaliteefilenew
+if [ $? -eq 0 ]; then
+    echo "[INFO] OK, identical number of warnings."
+else
+    echo "[ERROR] More warnings in branch ${BRANCHNEW}.  Please fix."
+    exit 1
+fi
