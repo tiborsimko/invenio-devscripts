@@ -85,7 +85,9 @@ def get_target_source_pathname(local_source_pathname):
     the pathname on the local system.
     """
     out = local_source_pathname
-    return out.replace('/home/simko/private','/opt/simko')
+    out = out.replace('/home/simko/private','/opt/simko')
+    out = out.replace('/afs/cern.ch/user/s/simko/private', '/opt/simko')
+    return out
 
 
 def get_toplevel_dir(dirname):
