@@ -103,6 +103,23 @@ def get_toplevel_dir(dirname):
         print "[ERROR]", err
     if out:
         toplevel_dirname = out.strip() # pylint: disable=E1103
+
+    if not os.path.exists(toplevel_dirname):
+        # maybe dirname is not under git control, or maybe we have
+        # older git version that does not support show-toplevel CLI
+        # option to rev-parse; so find it by iterating:
+        foundp = False
+        possible_toplevel_dirname = dirname
+        while  not (foundp or possible_toplevel_dirname == '/'):
+            if os.path.exists(os.path.join(possible_toplevel_dirname, '.git')):
+                foundp = True
+            else:
+                possible_toplevel_dirname = os.path.dirname(possible_toplevel_dirname)
+        if foundp:
+            toplevel_dirname = possible_toplevel_dirname
+        else:
+            print "[ERROR] Cannot find git toplevel directory for %s." % gitname
+
     return toplevel_dirname
 
 
