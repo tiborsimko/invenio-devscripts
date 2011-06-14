@@ -1,14 +1,14 @@
 #+TITLE: Invenio Devscripts
 #+AUTHOR: Tibor Simko
 #+EMAIL: tibor.simko@cern.ch
-#+DATE: <2011-06-05 Sun>
+#+DATE: <2011-06-14 Tue>
 #+DESCRIPTION: A collection of scripts useful for Invenio development.
 #+KEYWORDS: invenio, development, scripts
 #+LANGUAGE: en
 
 * About invenio-devscripts
 
-~invenio-devscripts~ repository contains a collection of scripts
+=invenio-devscripts= repository contains a collection of scripts
 useful when hacking on [[http://invenio-software.org/][Invenio]].
 
 * Contents
@@ -26,6 +26,8 @@ useful when hacking on [[http://invenio-software.org/][Invenio]].
      contain I18N phrases are well present in POTFILES.in
 - invenio-delete-old-git-tags :: delete old CVS-times tags from git
      repository
+- invenio-code-browser :: generate and publish Invenio code browser
+     pages
 
 * Installation
 
@@ -151,6 +153,16 @@ repository.  Some developers still have the old tags present in their
 personal repositories, so when you fetch from them, the old CVS style
 tags may reappear from time to time.  When this happens, running this
 script will delete them.
+
+** invenio-code-browser
+
+Generate and publish Invenio code browser pages.  Assumes having
+installed Invenio locally first.  Call this script with
+=--generate-code-browser-pages= CLI option and check its output in a
+web browser.  If everything looks fine, then publish generated code
+browser pages on the [[http://invenio-software.org/code-browser/][code browser]] canonical web site by calling this
+script with =--publish-code-browser-pages= CLI option.  This script is
+used from time to time by the Head Developer.
 
 * License
 
