@@ -453,10 +453,25 @@ Upgraded DEV (PCUDSSW1508), TEST (PCUDSSW1505) and PROD
 First, wait for bibsched jobs to stop and put the queue to manual mode
 (on the first worker node).  Then run upgrade in the following way:
 
-(BTW, on PROD, where we run with two worker nodes, inactivate one node
-in the load balancer and update it, then inactivate the other node and
+On PROD, where we run with two worker nodes, inactivate one node in
+the load balancer and update it, then inactivate the other node and
 update it, so that we have no service interruption and no alarms
-raised:)
+raised.  So the procedure is as follows:
+
+On the load balancer (PCUDSSW1503):
+
+#+BEGIN_SRC sh
+sudo cp -a /etc/httpd/conf/httpd.conf.WORKER-PCUDSSW1506-ONLY /etc/httpd/conf/httpd.conf
+sudo /etc/init.d/httpd graceful
+## now upgrade second worker node PCUDSSW1507
+sudo cp -a /etc/httpd/conf/httpd.conf.WORKER-PCUDSSW1507-ONLY /etc/httpd/conf/httpd.conf
+sudo /etc/init.d/httpd graceful
+## now upgrade first worker node PCUDSSW1506
+sudo cp -a /etc/httpd/conf/httpd.conf.WORKERS-ALL /etc/httpd/conf/httpd.conf
+sudo /etc/init.d/httpd graceful
+#+END_SRC
+
+On every individual worker node:
 
 #+BEGIN_SRC sh
 sudo -u %(apache)s /usr/bin/id
