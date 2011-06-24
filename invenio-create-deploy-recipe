@@ -125,6 +125,13 @@ def get_toplevel_dir(dirname):
     return toplevel_dirname
 
 
+def get_reponame_from_repodir(repodir):
+    """
+    Return repository name for given repository directory.
+    """
+    return os.path.basename(get_toplevel_dir(repodir))
+
+
 def get_commit_msg(commitid, repodir):
     """
     Return commit message corresponding to COMMITID which can be
@@ -341,9 +348,9 @@ def write_single_repo_deploy_recipe_header(commitid, repodir):
        'summary': get_commit_headline(commitid, repodir)}
 
     if '..' in commitid:
-        print "Deployed patches:"
+        print "Deployed patches from =%s= repository:" % get_reponame_from_repodir(repodir)
     else:
-        print "Deployed patch:"
+        print "Deployed patch from =%s= repository:" % get_reponame_from_repodir(repodir)
     print """\
 
 #+BEGIN_EXAMPLE
@@ -430,8 +437,8 @@ def write_twin_repo_deploy_recipe_header(commitid1, repodir1,
     """
     print """\
 %(heading)s upgraded DEV/TEST/PROD to latest master (%(reponame1)s %(patch1)s, %(reponame2)s %(patch2)s)
-""" % {'heading': CFG_MSG_HEADING, 'reponame1': os.path.basename(repodir1),
-       'patch1': commitid1, 'reponame2' : os.path.basename(repodir2),
+""" % {'heading': CFG_MSG_HEADING, 'reponame1': get_reponame_from_repodir(repodir1),
+       'patch1': commitid1, 'reponame2': get_reponame_from_repodir(repodir2),
        'patch2': commitid2}
     return
 
