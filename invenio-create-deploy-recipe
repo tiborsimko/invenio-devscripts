@@ -87,6 +87,7 @@ def get_target_source_pathname(local_source_pathname):
     out = local_source_pathname
     out = out.replace('/home/simko/private','/opt/simko')
     out = out.replace('/afs/cern.ch/user/s/simko/private', '/opt/simko')
+    out = out.replace('/opt/simko/afs-only/src', '$HOME/private/afs-only/src')
     return out
 
 
