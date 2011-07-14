@@ -72,7 +72,7 @@ elif '--inspire' in sys.argv:
     CFG_PREFIX = '/opt/cds-invenio'
     CFG_MSG_HEADING = 'INSPIRE logbook:'
     CFG_MSG_MACHINE = 'on DEV (PCUDSSW1508), TEST (PCUDSSW1505)' + \
-                      ' and PROD (PCUDSSW150[6-7])'
+                      ' and PROD (PCUDSSW150[6-7],PCUDSSX1506)'
 else:
     CFG_PREFIX = '/opt/invenio'
     CFG_MSG_HEADING = 'logbook:'
@@ -455,15 +455,15 @@ def write_twin_repo_deploy_recipe_body(commitid1, repodir1,
     """
     print """\
 Upgraded DEV (PCUDSSW1508), TEST (PCUDSSW1505) and PROD
-(PCUDSSW150[6-7]) to latest git master sources (%(reponame1)s
-%(commitid1)s, %(reponame2)s %(commitid2)s).
+(PCUDSSW150[6-7],PCUDSSX1506) to latest git master sources
+(%(reponame1)s %(commitid1)s, %(reponame2)s %(commitid2)s).
 
 First, wait for bibsched jobs to stop and put the queue to manual mode
 (on the first worker node).  Then run upgrade in the following way:
 
-On PROD, where we run with two worker nodes, inactivate one node in
-the load balancer and update it, then inactivate the other node and
-update it, so that we have no service interruption and no alarms
+On PROD, where we run with three worker nodes, inactivate two nodes in
+the load balancer and update them, then inactivate the remaining node
+and update it, so that we have no service interruption and no alarms
 raised.  So the procedure is as follows:
 
 On the load balancer (PCUDSSW1503):
@@ -471,7 +471,7 @@ On the load balancer (PCUDSSW1503):
 #+BEGIN_SRC sh
 sudo cp -a /etc/httpd/conf/httpd.conf.WORKER-PCUDSSW1506-ONLY /etc/httpd/conf/httpd.conf
 sudo /etc/init.d/httpd graceful
-## now upgrade second worker node PCUDSSW1507
+## now upgrade second worker node PCUDSSW1507 and third worker node PCUDSSX1506
 sudo cp -a /etc/httpd/conf/httpd.conf.WORKER-PCUDSSW1507-ONLY /etc/httpd/conf/httpd.conf
 sudo /etc/init.d/httpd graceful
 ## now upgrade first worker node PCUDSSW1506
