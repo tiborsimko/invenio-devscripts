@@ -27,6 +27,8 @@ CFG_INVENIO_SRCDIR=${CFG_INVENIO_SRCDIR:=~/private/src/invenio}
 CFG_INVENIO_PREFIX=${CFG_INVENIO_PREFIX:=/opt/invenio}
 CFG_INVENIO_HOSTNAME=${CFG_INVENIO_HOSTNAME:=pcuds07}
 CFG_INVENIO_DOMAINNAME=${CFG_INVENIO_DOMAINNAME:=cern.ch}
+CFG_INVENIO_PORT_HTTP=${CFG_INVENIO_PORT_HTTP:=80}
+CFG_INVENIO_PORT_HTTPS=${CFG_INVENIO_PORT_HTTPS:=443}
 CFG_INVENIO_USER=${CFG_INVENIO_USER:=www-data}
 CFG_INVENIO_ADMIN=${CFG_INVENIO_ADMIN:=tibor.simko@cern.ch}
 
@@ -74,9 +76,22 @@ sudo chown -R nobody $CFG_INVENIO_PREFIX/var/tmp/ooffice-tmp-files
 sudo chmod -R 755 $CFG_INVENIO_PREFIX/var/tmp/ooffice-tmp-files
 
 # set up invenio-local.conf:
+siteurl=${CFG_INVENIO_HOSTNAME}
+if [ "${CFG_INVENIO_DOMAINNAME}" = "localhost" ]; then
+    siteurl="localhost"
+else
+    siteurl=${siteurl}.${CFG_INVENIO_DOMAINNAME}
+fi
+sitesecureurl=${siteurl}
+if [ "${CFG_INVENIO_PORT_HTTP}" != "80" ]; then
+    siteurl=${siteurl}:${CFG_INVENIO_PORT_HTTP}
+fi
+if [ "${CFG_INVENIO_PORT_HTTPS}" != "443" ]; then
+    sitesecureurl=${sitesecureurl}:${CFG_INVENIO_PORT_HTTPS}
+fi
 echo "[Invenio]
-CFG_SITE_URL = http://${CFG_INVENIO_HOSTNAME}.${CFG_INVENIO_DOMAINNAME}
-CFG_SITE_SECURE_URL = https://${CFG_INVENIO_HOSTNAME}.${CFG_INVENIO_DOMAINNAME}
+CFG_SITE_URL = http://${siteurl}
+CFG_SITE_SECURE_URL = https://${sitesecureurl}
 CFG_SITE_ADMIN_EMAIL = ${CFG_INVENIO_ADMIN}
 CFG_SITE_SUPPORT_EMAIL = ${CFG_INVENIO_ADMIN}
 CFG_WEBALERT_ALERT_ENGINE_EMAIL = ${CFG_INVENIO_ADMIN}
