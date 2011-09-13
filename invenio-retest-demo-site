@@ -54,9 +54,11 @@ echo
 yyyymmddhhmmss=$(date +"%Y-%m-%d-%H-%M-%S")
 unittestresults=/tmp/$(basename $0)-unit-$yyyymmddhhmmss
 regressiontestresults=/tmp/$(basename $0)-regression-$yyyymmddhhmmss
+webtestresults=/tmp/$(basename $0)-web-$yyyymmddhhmmss
 savedir=$HOME/.invenio-devscripts.d
 saveunittestresults=$savedir/$(basename $0)-unit-lastrun
 saveregressiontestresults=$savedir/$(basename $0)-regression-lastrun
+savewebtestresults=$savedir/$(basename $0)-web-lastrun
 
 # run unit tests:
 echo "[INFO] Running unit test suite..."
@@ -84,15 +86,31 @@ if [ -f $saveregressiontestresults ]; then
     set -o errexit
 fi
 
+# run web tests:
+echo "[INFO] Running web test suite..."
+${CFG_INVENIO_PREFIX}/bin/inveniocfg --run-web-tests --yes-i-know > $webtestresults 2>&1
+sed -n '/^Ran [0-9]/,$p' $webtestresults
+
+# compare web test results against last run:
+if [ -f $savewebtestresults ]; then
+    echo "[INFO] Web test results compared against last run:"
+    set +o errexit
+    colordiff -u $savewebtestresults $webtestresults
+    set -o errexit
+fi
+
 # save results:
 read -p "[QUESTION] Do you wish to save these results? (y/n) [n] " answer
 if [ "$answer" = "y" ]; then
     mkdir -p $savedir
     mv -f $unittestresults $saveunittestresults
     mv -f $regressiontestresults $saveregressiontestresults
-    echo "[INFO] Results saved as ${saveunittestresults} and ${saveregressiontestresults}."
+    mv -f $webtestresults $savewebtestresults
+    echo "[INFO] Results saved as ${saveunittestresults}, " \
+         "${saveregressiontestresults} and ${savewebtestresults}."
 else
-    echo "[INFO] Left results at ${unittestresults} and ${regressiontestresults}."
+    echo "[INFO] Left results at ${unittestresults}, " \
+         "${regressiontestresults} and ${webtestresults}."
 fi
 
 echo "[INFO] Done."
