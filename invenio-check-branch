@@ -68,7 +68,12 @@ invenio-make-install
 #    echo "[ERROR] pylint -e does not pass."
 #    exit 1
 #fi
-invenio-check-kwalitee -q --check-some $checkfiles | sed 's/^.*[0-9]://' | sed 's/line [0-9][0-9]*//' > $kwaliteefileold
+rm -f $kwaliteefileold
+for afile in $checkfiles; do
+    if [ -e $afile ]; then
+        invenio-check-kwalitee -q --check-some $afile | sed 's/^.*[0-9]://' | sed 's/line [0-9][0-9]*//' >> $kwaliteefileold
+    fi
+done
 
 # run kwalitee checks on new branch, ignoring line numbers:
 echo "[INFO] Installing branch $BRANCHNEW ..."
@@ -79,7 +84,12 @@ invenio-make-install
 #    echo "[ERROR] pylint -e does not pass."
 #    exit 1
 #fi
-invenio-check-kwalitee -q --check-some $checkfiles | sed 's/^.*[0-9]://' | sed 's/line [0-9][0-9]*//' > $kwaliteefilenew
+rm -f $kwaliteefilenew
+for afile in $checkfiles; do
+    if [ -e $afile ]; then
+        invenio-check-kwalitee -q --check-some $afile | sed 's/^.*[0-9]://' | sed 's/line [0-9][0-9]*//' >> $kwaliteefilenew
+    fi
+done
 
 # return to the branch we started from:
 echo "[INFO] Reinstalling the original branch $currentbranch ..."
