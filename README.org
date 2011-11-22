@@ -1,7 +1,7 @@
 #+TITLE: Invenio Devscripts
 #+AUTHOR: Tibor Simko
 #+EMAIL: tibor.simko@cern.ch
-#+DATE: <2011-06-14 Tue>
+#+DATE: <2011-11-22 Tue>
 #+DESCRIPTION: A collection of scripts useful for Invenio development.
 #+KEYWORDS: invenio, development, scripts
 #+LANGUAGE: en
@@ -123,6 +123,28 @@ kwalitee problems in your buffer and to press the usual =C-x `= to
 jump from one problematic location to the next in order to fix them.
 
 ** invenio-check-branch
+
+If you work on a feature branch named say /new-feature/ that stems
+from /master/ and you modify plenty of files, add some new files, and
+delete some other files, then you may want to check how the overall
+code kwalitee changed in your branch with respect to master.  You can
+run:
+
+#+BEGIN_SRC sh
+invenio-check-branch master new-feature
+#+END_SRC
+
+This devscript will perform kwalitee check on files that were modified
+in the /new-feature/ branch when compared to the /master/ branch and
+it will inform you of kwalitee report differences.  The comparison
+disregards line numbers, so that typical code moving/adding/deleting
+situations are handled relatively nicely, even if the starting branch
+code is dirty.  However, doing comparison in this "fuzzy" way may also
+leads to false positives, so beware.  If/when we are free of kwalitee
+issues everywhere, we can do stricter comparison here.
+
+You should run =invenio-check-branch= on your feature branches before
+every merge request.
 
 ** invenio-recreate-demo-site
 
