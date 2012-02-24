@@ -9,7 +9,7 @@
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2011 CERN.
+# Copyright (C) 2011, 2012 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -91,11 +91,13 @@ for afile in $checkfiles; do
     fi
 done
 
-# return to the branch we started from:
-echo "[INFO] Reinstalling the original branch $currentbranch ..."
-cd $currentdirectory
-git checkout $currentbranch
-invenio-make-install
+# return to the branch we started from, if different:
+if [ "$currentbranch" != "$BRANCHNEW" ]; then
+    echo "[INFO] Reinstalling the original branch $currentbranch ..."
+    cd $currentdirectory
+    git checkout $currentbranch
+    invenio-make-install
+fi
 
 # compare number of warnings found:
 echo "[INFO] Comparing kwalitee of $checkfiles between $BRANCHOLD and $BRANCHNEW ..."
