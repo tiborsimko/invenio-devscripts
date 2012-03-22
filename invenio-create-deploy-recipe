@@ -2,7 +2,7 @@
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2011 CERN.
+# Copyright (C) 2011, 2012 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ elif '--inspire' in sys.argv:
     CFG_PREFIX = '/opt/cds-invenio'
     CFG_MSG_HEADING = 'INSPIRE logbook:'
     CFG_MSG_MACHINE = 'on DEV (PCUDSSW1508), TEST (PCUDSSW1505)' + \
-                      ' and PROD (PCUDSSW150[6-7],PCUDSSX1506)'
+                      ' and PROD (PCUDSSW150[4,6-7],PCUDSSX1506)'
 else:
     CFG_PREFIX = '/opt/invenio'
     CFG_MSG_HEADING = 'logbook:'
@@ -455,7 +455,7 @@ def write_twin_repo_deploy_recipe_body(commitid1, repodir1,
     """
     print """\
 Upgraded DEV (PCUDSSW1508), TEST (PCUDSSW1505) and PROD
-(PCUDSSW150[6-7],PCUDSSX1506) to latest git master sources
+(PCUDSSW150[4,6-7],PCUDSSX1506) to latest git master sources
 (%(reponame1)s %(commitid1)s, %(reponame2)s %(commitid2)s).
 
 First, wait for bibsched jobs to stop and put the queue to manual mode
