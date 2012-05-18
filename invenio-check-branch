@@ -27,6 +27,12 @@
 # configuration
 CFG_INVENIO_SRCDIR=${CFG_INVENIO_SRCDIR:=~/private/src/invenio}
 
+# check path
+case "$(pwd)" in
+    *$CFG_INVENIO_SRCDIR* ) ;;
+    * ) echo "[ERROR] You must run this script inside $CFG_INVENIO_SRCDIR." && exit 1;;
+esac
+
 # read arguments:
 if [ $# -eq 0 ]; then
     # no arguments; assume to check current branch against master
