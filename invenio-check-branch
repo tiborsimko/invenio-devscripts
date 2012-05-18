@@ -127,7 +127,7 @@ if [ $nold -gt $nnew ]; then
 fi
 
 # compare contents of warnings found:
-colordiff -u $kwaliteefileold $kwaliteefilenew
+diff -u $kwaliteefileold $kwaliteefilenew
 if [ $? -eq 0 ]; then
     echo "[INFO] OK, identical number of warnings."
 else
