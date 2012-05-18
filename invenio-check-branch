@@ -28,12 +28,24 @@
 CFG_INVENIO_SRCDIR=${CFG_INVENIO_SRCDIR:=~/private/src/invenio}
 
 # read arguments:
-if [ $# -lt 2 ]; then
-    echo "Usage: $(basename $0) some-base-branch some-topic-branch"
+if [ $# -eq 0 ]; then
+    # no arguments; assume to check current branch against master
+    BRANCHOLD=master
+    BRANCHNEW=$(git branch | grep \* | sed -e s/[\ \*]//g)
+else
+    if [ $# -lt 2 ]; then
+        echo "[ERROR] Usage: $(basename $0) some-base-branch some-topic-branch"
+        exit 1
+    fi
+    BRANCHOLD=$1
+    BRANCHNEW=$2
+fi
+
+# check arguments:
+if [ "$BRANCHOLD" = "$BRANCHNEW" ]; then
+    echo "[ERROR] Not needed to check branch $BRANCHNEW against $BRANCHOLD.  Exiting."
     exit 1
 fi
-BRANCHOLD=$1
-BRANCHNEW=$2
 
 # check possible merge conflict leftovers:
 nmerge=$(git log $BRANCHOLD..$BRANCHNEW -p | grep -c -E '^\+[><=]{7}(\s|$)')
