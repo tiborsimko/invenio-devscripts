@@ -47,7 +47,9 @@ You may also want to configure the following environment variables:
 | CFG_INVENIO_PORT_HTTP  | what is our HTTP port number?     | 80                    |
 | CFG_INVENIO_PORT_HTTPS | what is our HTTPS port number?    | 443                   |
 | CFG_INVENIO_USER       | under which user ID Invenio runs? | www-data              |
-| CFG_INVENIO_ADMIN      | who is admin of this Instance?    | tibor.simko@cern.ch   |
+| CFG_INVENIO_APACHECTL  | how to restart Apache?            | /etc/init.d/apache2   |
+| CFG_INVENIO_MYSQLCTL   | how to restart MySQL?             | /etc/init.d/mysql     |
+| CFG_INVENIO_ADMIN      | who is admin of this instance?    | tibor.simko@cern.ch   |
 
 or else call the scripts "on the spot" like this:
 

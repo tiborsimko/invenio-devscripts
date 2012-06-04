@@ -7,7 +7,7 @@
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2011 CERN.
+# Copyright (C) 2011, 2012 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,6 +31,8 @@ CFG_INVENIO_PORT_HTTP=${CFG_INVENIO_PORT_HTTP:=80}
 CFG_INVENIO_PORT_HTTPS=${CFG_INVENIO_PORT_HTTPS:=443}
 CFG_INVENIO_USER=${CFG_INVENIO_USER:=www-data}
 CFG_INVENIO_ADMIN=${CFG_INVENIO_ADMIN:=tibor.simko@cern.ch}
+CFG_INVENIO_APACHECTL=${CFG_INVENIO_APACHECTL:=/etc/init.d/apache2}
+CFG_INVENIO_MYSQLCTL=${CFG_INVENIO_MYSQLCTL:=/etc/init.d/mysql}
 
 # sanity check: CLI confirmation
 if [ "$1" != "--yes-i-know" ]; then
@@ -100,12 +102,34 @@ CFG_WEBCOMMENT_DEFAULT_MODERATOR = ${CFG_INVENIO_ADMIN}
 CFG_BIBAUTHORID_AUTHOR_TICKET_ADMIN_EMAIL = ${CFG_INVENIO_ADMIN}" | \
     sudo -u $CFG_INVENIO_USER tee $CFG_INVENIO_PREFIX/etc/invenio-local.conf
 
-# install Atlantis demo site with demo records:
+# update Invenio and Apache configuration with this information:
 sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --update-all \
                                                              --create-apache-conf \
-                                                             --drop-demo-site \
+                                                             --yes-i-know
+
+# MySQL-5.5 hack: before dropping and recreating tables, let's stop
+# Apache and let's restart MySQL to free any DB connections we may
+# have.  This helps in case we are running MySQL-5.5 where otherwise
+# we could get into "Waiting for table metadata lock" situations due
+# to other existing DB sessions.
+sudo $CFG_INVENIO_APACHECTL stop
+sudo $CFG_INVENIO_MYSQLCTL restart
+
+# MySQL-5.5 hack: also, let's drop tables here in the shell, rather
+# than from within inveniocfg, where MySQLdb may open new sessions
+# that may lead to autocommit and metadata lock issues.
+$CFG_INVENIO_PREFIX/bin/dbexec < $CFG_INVENIO_PREFIX/lib/sql/invenio/tabdrop.sql
+
+# drop and recreate tables and Atlantis demo site:
+sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-tables \
                                                              --create-demo-site \
-                                                             --load-demo-records \
+                                                             --yes-i-know
+
+# MySQL-5.5 hack: restart Apache back:
+sudo $CFG_INVENIO_APACHECTL start
+
+# load Atlantis demo records:
+sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --load-demo-records \
                                                              --yes-i-know
 
 # restart Invenio WSGI app:
