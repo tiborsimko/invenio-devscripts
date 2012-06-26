@@ -2,7 +2,7 @@
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2011 CERN.
+# Copyright (C) 2011, 2012 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -32,6 +32,12 @@ CFG_INVENIO_SRCDIR = os.environ.get('CFG_INVENIO_SRCDIR',
                                     os.path.join(os.environ.get('HOME'),
                                                  'private/src/invenio'))
 
+# list of known false positives, i.e. names that appear in the AUTHORS
+# or THANKS file but were spelled differently in some of git commits:
+CFG_FALSE_POSITIVES = ['Travis C. Brooks',
+                       'valkyrie',
+                       'Javier Martin Montull']
+
 # go to Invenio source directory:
 os.chdir(CFG_INVENIO_SRCDIR)
 
@@ -44,12 +50,14 @@ for line in out.split('\n'):
 # check if they are in AUTHORS or THANKS file:
 errors_found = False
 for author in authors:
-    out = commands.getoutput('grep -c "%s" AUTHORS' % author.split(' <', 1)[0])
+    author_name = author.split(' <', 1)[0]
+    out = commands.getoutput('grep -c "%s" AUTHORS' % author_name)
     if out == '0':
-        out = commands.getoutput('grep -c "%s" THANKS' % author.split(' <', 1)[0])
+        out = commands.getoutput('grep -c "%s" THANKS' % author_name)
         if out == '0':
-            errors_found = True
-            print "[ERROR] %s does not seem to be in AUTHORS or THANKS file." % author
+            if author_name not in CFG_FALSE_POSITIVES:
+                errors_found = True
+                print "[ERROR] %s does not seem to be in AUTHORS or THANKS file." % author
 
 if errors_found:
     sys.exit(1)
