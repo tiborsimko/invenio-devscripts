@@ -66,8 +66,8 @@ else:
 
 if '--cds' in sys.argv:
     CFG_PREFIX = '/opt/cdsweb'
-    CFG_MSG_HEADING = 'CDS logbook: PCUDSSX1502:'
-    CFG_MSG_MACHINE = 'on PROD (PCUDSSX1502)'
+    CFG_MSG_HEADING = 'CDS logbook: PCUDSSX150[2-3]:'
+    CFG_MSG_MACHINE = 'on PROD (PCUDSSX150[2-3])'
 elif '--inspire' in sys.argv:
     CFG_PREFIX = '/opt/cds-invenio'
     CFG_MSG_HEADING = 'INSPIRE logbook:'
