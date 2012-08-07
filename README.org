@@ -150,9 +150,76 @@ every merge request.
 
 ** invenio-recreate-demo-site
 
+Once you have installed Invenio for the first time on a box, you can
+use this devscript to reinstall the Atlantis demo site anew.  Please
+beware, because =invenio-recreate-demo-site= will erase your database
+tables and recreate your =/opt/invenio= anew.
+
 ** invenio-retest-demo-site
 
+This devscript launches all unit/regression/web test suite cases on
+your installation, compares results against the last run, and warns
+you in case of differences.  It is useful to see whether your branch
+did not accidentally break some tests.  The script assumes running on
+the usual Atlantis demo site conditions, and may be destructive, so
+please beware.
+
 ** invenio-create-deploy-recipe
+
+Creates deployment recipe out of an Invenio commit or a range of
+commits.  Here are typical use cases:
+
+#+BEGIN_SRC sh
+invenio-create-deploy-recipe --cds
+invenio-create-deploy-recipe --cds HEAD~10..
+invenio-create-deploy-recipe --inspire --via-filecopy 48c7348..52fa18f
+invenio-create-deploy-recipe --inspire HEAD,HEAD
+#+END_SRC
+
+Notes:
+
+ - The script understands CDS and INSPIRE site conditions as two
+   concrete site examples.  You can use =--cds= or =--inspire= command
+   line options to specify deployment on either CDS or INSPIRE.
+
+ - The script takes =SHA1= of the commit to deploy, or =SHA1a..SHA1b=
+   commit range to deploy.  If this argument is missing, then it
+   deploys the latest single commit on the current branch.
+
+ - Note that the commit range may contain a comma -- such as in the
+   fourth =HEAD,HEAD= example above -- in which case the commit range
+   before the comma will be taken from the Invenio repository, and the
+   commit range after the comma will be taken from the appropriate
+   overlay repository (CDS or INSPIRE).  In case the comma is not
+   specified, the current repository is taken, either Invenio master
+   repository or the INSPIRE overlay.
+
+ - The generated recipe is =org-mode=-formatted and is to be inspected
+   by humans.  E.g. in case of DB changes, the recipe will contain a
+   warning at the end of the recipe, and a human is supposed provide
+   appropriate =ALTER TABLE= statements and the like.
+
+ - The generated recipe can use either file copy instructions
+   (=--via-filecopy=) or autotools installation instructions
+   (=--via-install=).  You may preferably use the former in order to
+   deploy small patches.
+
+ - Note that the recipes may be generated on a machine that does not
+   run the same destination overlay.  E.g. one can generate Invenio
+   deployment recipes for a remote INSPIRE service on a locally run
+   Atlantis demo site.  However, when generated INSPIRE overlay
+   recipes, it is helpful to do so on an INSPIRE site, because the
+   script may try to find location of some expected files.
+
+Once the deployment recipe is proof-read by human, the generated code
+snippets can be copy-pasted onto appropriate worker nodes.
+
+Note that this devscript constitutes a human-assisted semi-automatic
+deployment technique.  This is mostly because of the bleeding edge
+nature of the master branch deployment that is seeked out here.  If we
+would like to deploy release maintenance branches, then we could
+target more fully automated deployment mechanisms, via post-commit
+hooks or via Fabric.
 
 ** invenio-check-AUTHORS
 
@@ -164,7 +231,7 @@ integration and release management hats.
 
 ** invenio-check-POTFILES
 
-Check I18N usage in Invenio.  Firstly, checks whether each file from
+Checks I18N usage in Invenio.  Firstly, checks whether each file from
 POTFILES.in exists and whether it contains =_(=.  Secondly, checks
 each Invenio source file that contains =_(= whether it is well present
 in POTFILES.in.
