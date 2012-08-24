@@ -5,7 +5,7 @@
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2011 CERN.
+# Copyright (C) 2011, 2012 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -31,8 +31,7 @@ if [ "$1" != "--yes-i-know" ]; then
     exit
 fi
 
-# quit on errors and potentially unbound symbols:
-set -o errexit
+# quit on potentially unbound symbols:
 set -o nounset
 
 # sanity check: hostname
@@ -68,9 +67,7 @@ sed -n '/^Ran [0-9]/,$p' $unittestresults
 # compare unit test results against last run:
 if [ -f $saveunittestresults ]; then
     echo "[INFO] Unit test results compared against last run:"
-    set +o errexit
     colordiff -u $saveunittestresults $unittestresults
-    set -o errexit
 fi
 
 # run regression tests:
@@ -81,9 +78,7 @@ sed -n '/^Ran [0-9]/,$p' $regressiontestresults
 # compare regression test results against last run:
 if [ -f $saveregressiontestresults ]; then
     echo "[INFO] Regression test results compared against last run:"
-    set +o errexit
     colordiff -u $saveregressiontestresults $regressiontestresults
-    set -o errexit
 fi
 
 # run web tests:
@@ -94,9 +89,7 @@ sed -n '/^Ran [0-9]/,$p' $webtestresults
 # compare web test results against last run:
 if [ -f $savewebtestresults ]; then
     echo "[INFO] Web test results compared against last run:"
-    set +o errexit
     colordiff -u $savewebtestresults $webtestresults
-    set -o errexit
 fi
 
 # save results:
