@@ -1,0 +1,158 @@
+#!/bin/bash
+#
+# A helper devscript to initialise virtualenv for Invenio development.
+# Assumes certain sudo rights.  Typical usage:
+#
+#   $ cd ~/private/src/invenio
+#   $ git checkout master
+#   $ mkvirtualenv --system-site-packages invenio-master
+#   $ invenio-initialise-virtualenv invenio-master --yes-i-know
+#   $ deactivate && workon invenio-master
+#   $ invenio-recreate-demo-site --yes-i-know
+#
+# For more information, see
+# <https://github.com/tiborsimko/invenio-devscripts>.
+#
+# Tibor Simko <tibor.simko@cern.ch>
+#
+# Copyright (C) 2012 CERN.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/>.
+
+# config section:
+CFG_INVENIO_SRCDIR=${CFG_INVENIO_SRCDIR:=~/private/src/invenio}
+CFG_INVENIO_PREFIX=${CFG_INVENIO_PREFIX:=/opt/invenio}
+CFG_INVENIO_HOSTNAME=${CFG_INVENIO_HOSTNAME:=pcuds07}
+CFG_INVENIO_DOMAINNAME=${CFG_INVENIO_DOMAINNAME:=cern.ch}
+CFG_INVENIO_PORT_HTTP=${CFG_INVENIO_PORT_HTTP:=80}
+CFG_INVENIO_PORT_HTTPS=${CFG_INVENIO_PORT_HTTPS:=443}
+CFG_INVENIO_USER=${CFG_INVENIO_USER:=www-data}
+CFG_INVENIO_ADMIN=${CFG_INVENIO_ADMIN:=tibor.simko@cern.ch}
+CFG_INVENIO_DATABASE_NAME=${CFG_INVENIO_DATABASE_NAME:=invenio}
+CFG_INVENIO_DATABASE_USER=${CFG_INVENIO_DATABASE_USER:=invenio}
+CFG_INVENIO_APACHECTL=${CFG_INVENIO_APACHECTL:=/etc/init.d/apache2}
+CFG_INVENIO_MYSQLCTL=${CFG_INVENIO_MYSQLCTL:=/etc/init.d/mysql}
+CFG_INVENIO_VIRTUALENVS=${CFG_INVENIO_VIRTUALENVS:=$HOME/.virtualenvs}
+
+# sanity check: virtualenv name
+VEHOME=$CFG_INVENIO_VIRTUALENVS
+VENAME=$1
+if [ "x$VENAME" = "x" ]; then
+    echo "[ERROR] Unknown desired virtualenv name."
+    echo "[INFO] Please run '$(basename $0) invenio-master' or the like."
+    exit
+fi
+
+# derive DB name out of VE name:
+DBNAME=$(echo $VENAME | sed "s/\-//g" | sed "s/\.//g")
+
+# sanity check: CLI confirmation
+if [[ "$@" != *"--yes-i-know"* ]]; then
+    echo "[ERROR] You did not use --yes-i-know.  Not going to initialise virtualenv $VENAME."
+    exit
+fi
+
+# quit on errors and potentially unbound symbols:
+set -o errexit
+set -o nounset
+
+# sanity check: hostname
+if [ "`hostname`" != "$CFG_INVENIO_HOSTNAME" ]; then
+    echo "[ERROR] This hostname is not whitelisted for initialising virtualenv."
+    exit
+fi
+
+# verify whether the wanted virtualenv already exist:
+if [ ! -d "$VEHOME/$VENAME" ]; then
+    echo "[ERROR] Virtualenv '$VENAME' does not exist yet."
+    echo "[INFO] Please create it by running one of the following first:"
+    echo "[INFO] (a) 'mkvirtualenv --system-site-packages $VENAME' if you want to use system Python (fast, easy on Apache)"
+    echo "[INFO] (b) 'mkvirtualenv --no-site-packages $VENAME' if you want to use shielded pip (slow, harder with Apache)"
+    echo "[INFO] After that, rerun me again."
+    exit
+fi
+
+# initialise virtualenv:
+echo "[INFO] Creating postactivate hook..."
+cat > $VEHOME/$VENAME/bin/postactivate <<EOF1
+#!/bin/bash
+
+# set up configuration variables:
+export CFG_INVENIO_DATABASE_NAME=$DBNAME
+export CFG_INVENIO_DATABASE_USER=$DBNAME
+
+# amend invenio symlink:
+sudo service apache2 stop
+sudo rm -f /opt/invenio
+sudo ln -s $VEHOME/$VENAME/opt/invenio /opt/invenio
+sudo service apache2 start
+
+# end of file
+EOF1
+
+echo "[INFO] Creating postdeactivate hook..."
+cat > $VEHOME/$VENAME/bin/postdeactivate <<EOF2
+#!/bin/bash
+
+sudo service apache2 stop
+sudo rm /opt/invenio
+
+# end of file
+EOF2
+
+echo "[INFO] Setting up database..."
+echo "Please enter MySQL root password below."
+echo "CREATE DATABASE $DBNAME DEFAULT CHARACTER SET utf8; GRANT ALL PRIVILEGES ON $DBNAME.* TO $DBNAME@localhost IDENTIFIED BY 'my123p\$ss';" | mysql -u root -p -B
+
+echo "[INFO] Installing pre-requisites..."
+if [[ "$@" = *"--use-pip"* ]]; then
+    pip install ipython
+    pip install pylint
+    pip install pyflakes
+    pip install epydoc
+    pip install BeautifulSoup
+    pip install uTidylib
+    pip install 'MySQL-python==1.2.3'
+    pip install rdflib
+    pip install reportlab
+    pip install 'python-dateutil<=1.9999'
+    pip install python-magic
+    pip install numpy
+    pip install simplejson
+    pip install gnuplot-py
+    pip install pyPdf
+    pip install chardet
+    pip install python-Levenshtein
+    pip install PyStemmer
+    pip install lxml
+    pip install mechanize
+    pip install selenium
+    pip install pep8
+    pip install http://www.reportlab.com/ftp/pyRXP-1.16-daily-unix.tar.gz
+    pip install ftp://xmlsoft.org/libxml2/python/libxml2-python-2.6.21.tar.gz
+fi
+
+echo "[INFO] Setting up /opt/invenio location..."
+if [ ! -d $VEHOME/$VENAME/opt/invenio ]; then
+    mkdir -p $VEHOME/$VENAME/opt/invenio
+    sudo chown $CFG_INVENIO_USER $VEHOME/$VENAME/opt/invenio
+fi
+
+echo "[INFO] Setting up site-packages symlink..."
+SITEPACKAGES=$($VEHOME/$VENAME/bin/python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
+if [ ! -h $SITEPACKAGES/invenio ]; then
+    ln -s $VEHOME/$VENAME/opt/invenio/lib/python/invenio $SITEPACKAGES/invenio
+fi
+
+echo "[INFO] Done. You may want to run 'deactivate && workon $VENAME' and 'invenio-recreate-demo-site --yes-i-know' now."

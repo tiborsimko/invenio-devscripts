@@ -1,7 +1,7 @@
 #+TITLE: Invenio Devscripts
 #+AUTHOR: Tibor Simko
 #+EMAIL: tibor.simko@cern.ch
-#+DATE: <2011-11-22 Tue>
+#+DATE: <2012-11-05 Mon>
 #+DESCRIPTION: A collection of scripts useful for Invenio development.
 #+KEYWORDS: invenio, development, scripts
 #+LANGUAGE: en
@@ -19,6 +19,7 @@ useful when hacking on [[http://invenio-software.org/][Invenio]].
 - invenio-check-branch :: check code kwalitee changes between branches
 - invenio-recreate-demo-site :: recreate demo site
 - invenio-retest-demo-site :: rerun test suite on recreated demo site
+- invenio-initialise-virtualenv :: initialise virtualenv for Invenio development
 - invenio-create-deploy-recipe :: create deploy recipes
 - invenio-check-AUTHORS :: check whether all committers are well
      present in AUTHORS or THANKS files
@@ -39,17 +40,20 @@ then in your =$HOME/.bashrc= you can say:
 
 You may also want to configure the following environment variables:
 
-| Variable               | Documentation                     | Default value         |
-| CFG_INVENIO_SRCDIR     | where are Invenio sources?        | ~/private/src/invenio |
-| CFG_INVENIO_PREFIX     | where is Invenio installed?       | /opt/invenio          |
-| CFG_INVENIO_HOSTNAME   | what is allowed hostname?         | pcuds07               |
-| CFG_INVENIO_DOMAINNAME | what is our domain name?          | cern.ch               |
-| CFG_INVENIO_PORT_HTTP  | what is our HTTP port number?     | 80                    |
-| CFG_INVENIO_PORT_HTTPS | what is our HTTPS port number?    | 443                   |
-| CFG_INVENIO_USER       | under which user ID Invenio runs? | www-data              |
-| CFG_INVENIO_APACHECTL  | how to restart Apache?            | /etc/init.d/apache2   |
-| CFG_INVENIO_MYSQLCTL   | how to restart MySQL?             | /etc/init.d/mysql     |
-| CFG_INVENIO_ADMIN      | who is admin of this instance?    | tibor.simko@cern.ch   |
+| Variable                  | Documentation                     | Default value         |
+| CFG_INVENIO_SRCDIR        | where are Invenio sources?        | ~/private/src/invenio |
+| CFG_INVENIO_PREFIX        | where is Invenio installed?       | /opt/invenio          |
+| CFG_INVENIO_HOSTNAME      | what is allowed hostname?         | pcuds07               |
+| CFG_INVENIO_DOMAINNAME    | what is our domain name?          | cern.ch               |
+| CFG_INVENIO_PORT_HTTP     | what is our HTTP port number?     | 80                    |
+| CFG_INVENIO_PORT_HTTPS    | what is our HTTPS port number?    | 443                   |
+| CFG_INVENIO_USER          | under which user ID Invenio runs? | www-data              |
+| CFG_INVENIO_ADMIN         | who is admin of this instance?    | tibor.simko@cern.ch   |
+| CFG_INVENIO_DATABASE_NAME | what is database name?            | invenio               |
+| CFG_INVENIO_DATABASE_USER | what is database user?            | invenio               |
+| CFG_INVENIO_APACHECTL     | how to restart Apache?            | /etc/init.d/apache2   |
+| CFG_INVENIO_MYSQLCTL      | how to restart MySQL?             | /etc/init.d/mysql     |
+| CFG_INVENIO_VIRTUALENVS   | where is virtualenv home?         | ~/.virtualenvs        |
 
 or else call the scripts "on the spot" like this:
 
@@ -163,6 +167,78 @@ you in case of differences.  It is useful to see whether your branch
 did not accidentally break some tests.  The script assumes running on
 the usual Atlantis demo site conditions, and may be destructive, so
 please beware.
+
+** invenio-initialise-virtualenv
+
+If you have installed Invenio on your box, e.g. by following
+[[http://invenio-software.org/wiki/Installation/InvenioOnDebian][InvenioOnDebian]] instructions, then you may find it cumbersome to
+switch between various branches.  Say you are developing a feature
+based off the =master= branch and you would like to quick-fix a bug
+occurred in the =maint-1.1= branch, as well as to check this behaviour
+on the brand new =next= branch, all without having to recreate your
+Invenio demo sites.
+
+The solution is to set up several /virtualenv/ environments, each with
+its own installation place and its own database, so that you can
+quickly switch between them.  The devscript
+=invenio-initialise-virtualenv= will assist you in customising your
+environment for Invenio developments.
+
+Some prerequisites, starting out of a system installed in
+[[http://invenio-software.org/wiki/Installation/InvenioOnDebian][InvenioOnDebian]] manner:
+
+#+BEGIN_SRC sh
+sudo aptitude install virtualenvwrapper
+rm -rf /opt/invenio # this will become symlink later
+#+END_SRC
+
+Here is how you can create a new virtualenv environment called
+=invenio-master= (using system Apache and system Python packages) with
+fresh new Invenio demo site on it:
+
+#+BEGIN_SRC sh
+cd ~/private/src/invenio
+git checkout master
+mkvirtualenv --system-site-packages invenio-master
+invenio-initialise-virtualenv invenio-master --yes-i-know
+deactivate && workon invenio-master
+invenio-recreate-demo-site --yes-i-know
+#+END_SRC
+
+You can use the above commands to up several virtualenv environments
+named =invenio-maint-1.0=, =invenio-maint-1.1=, =invenio-master=,
+=invenio-next=, each corresponding to the respective branch.
+
+Here is how you can quickly switch between them:
+
+#+BEGIN_SRC sh
+workon invenio-maint-1.1 # browser will show we are running 'maint-1.1' site
+workon invenio-next      # browser will show we are running 'next' site
+#+END_SRC
+
+Here is typical hacking session with switching between environments:
+
+#+BEGIN_SRC sh
+## (1) let's start by working on some-new-feature-a in 'master' branch
+workon invenio-master                     # switch to master virtualenv
+git checkout -b some-new-feature-a master # start working on a feature
+cd modules/webfoo/lib/
+vim webfoo_templates.py                   # edit some files
+invenio-make-install                      # install changes
+firefox                                   # check some-new-feature-a in browser
+## (2) phone rings, there is a bug in Invenio v1.1.0 that we have to quick fix
+git commit -a -m xxx                      # stash unsaved work on some-new-feature-a
+workon invenio-maint-1.1                  # switch to maint-1.1 virtualenv
+git checkout -b fix-for-webbar maint-1.1  # start working on a bug fix for WebBar
+cd modules/webbar/lib/
+vim webfoo_dblayer.py                     # edit some files
+invenio-make-install                      # install changes
+firefox                                   # check whether WebBar is OK now
+git commit -a -m 'WebBar: fix for baz'    # commit the fix
+## (3) a visitor enters and wonders about the brand new search facets from 'next' branch
+workon invenio-next
+firefox                                   # will show 'next' demo site with facets
+#+END_SRC
 
 ** invenio-create-deploy-recipe
 
