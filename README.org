@@ -231,7 +231,7 @@ git commit -a -m xxx                      # stash unsaved work on some-new-featu
 workon invenio-maint-1.1                  # switch to maint-1.1 virtualenv
 git checkout -b fix-for-webbar maint-1.1  # start working on a bug fix for WebBar
 cd modules/webbar/lib/
-vim webfoo_dblayer.py                     # edit some files
+vim webbar_dblayer.py                     # edit some files
 invenio-make-install                      # install changes
 firefox                                   # check whether WebBar is OK now
 git commit -a -m 'WebBar: fix for baz'    # commit the fix
