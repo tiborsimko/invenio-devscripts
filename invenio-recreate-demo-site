@@ -35,6 +35,7 @@ CFG_INVENIO_DATABASE_NAME=${CFG_INVENIO_DATABASE_NAME:=invenio}
 CFG_INVENIO_DATABASE_USER=${CFG_INVENIO_DATABASE_USER:=invenio}
 CFG_INVENIO_APACHECTL=${CFG_INVENIO_APACHECTL:=/etc/init.d/apache2}
 CFG_INVENIO_MYSQLCTL=${CFG_INVENIO_MYSQLCTL:=/etc/init.d/mysql}
+CFG_INVENIO_USE_SYMLINKS=${CFG_INVENIO_USE_SYMLINKS:=0}
 
 # sanity check: CLI confirmation
 if [ "$1" != "--yes-i-know" ]; then
@@ -70,7 +71,11 @@ cd $CFG_INVENIO_SRCDIR
 aclocal
 automake -a
 autoconf
-./configure --prefix=$CFG_INVENIO_PREFIX
+if [ "${CFG_INVENIO_USE_SYMLINKS}" = "1" ]; then
+    INSTALL=`which invenio-symlink-installer` ./configure --prefix=$CFG_INVENIO_PREFIX
+else
+    ./configure --prefix=$CFG_INVENIO_PREFIX
+fi
 make -s
 sudo -u $CFG_INVENIO_USER make -s install
 sudo -u $CFG_INVENIO_USER make -s install-jquery-plugins
