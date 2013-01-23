@@ -7,7 +7,7 @@
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2011, 2012 CERN.
+# Copyright (C) 2011, 2012, 2013 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -77,6 +77,16 @@ sudo -u $CFG_INVENIO_USER make -s install-jquery-plugins
 sudo -u $CFG_INVENIO_USER make -s install-mathjax-plugin
 sudo -u $CFG_INVENIO_USER make -s install-ckeditor-plugin
 sudo -u $CFG_INVENIO_USER make -s install-pdfa-helper-files
+
+# if applicable, install also Twitter Bootstrap (for 'next' branch):
+if grep -q install-bootstrap INSTALL; then
+    sudo -u $CFG_INVENIO_USER make -s install-bootstrap
+fi
+
+# if applicable, install also jQuery Tokeninput (for 'next' branch):
+if grep -q install-jquery-tokeninput INSTALL; then
+    sudo -u $CFG_INVENIO_USER make -s install-jquery-tokeninput
+fi
 
 # make special sudo powered place for LibreOffice:
 sudo mkdir -p $CFG_INVENIO_PREFIX/var/tmp/ooffice-tmp-files
