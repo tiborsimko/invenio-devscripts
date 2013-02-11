@@ -67,6 +67,7 @@ sudo -u $CFG_INVENIO_USER rm -rf $CFG_INVENIO_PREFIX/*
 
 # install Invenio sources:
 cd $CFG_INVENIO_SRCDIR
+rm -rf autom4te.cache/
 aclocal
 automake -a
 autoconf
