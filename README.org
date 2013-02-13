@@ -32,13 +32,21 @@ useful when hacking on [[http://invenio-software.org/][Invenio]].
 
 * Installation
 
+** Clone devscript repository
+
 Put the scripts somewhere under your =PATH=.  For example, if you
-clone this repository into =$HOME/private/src/invenio-devscripts=,
+clone this repository under =$HOME/private/src=:
+
+: cd $HOME/private/src
+: git clone https://github.com/tiborsimko/invenio-devscripts.git
+
 then in your =$HOME/.bashrc= you can say:
 
 : export PATH=$HOME/private/src/invenio-devscripts:$PATH
 
-You may also want to configure the following environment variables:
+** Configure devscript variables
+
+You will need to configure some of the following environment variables:
 
 | Variable                  | Documentation                     | Default value         |
 | CFG_INVENIO_SRCDIR        | where are Invenio sources?        | ~/private/src/invenio |
@@ -55,14 +63,40 @@ You may also want to configure the following environment variables:
 | CFG_INVENIO_MYSQLCTL      | how to restart MySQL?             | /etc/init.d/mysql     |
 | CFG_INVENIO_VIRTUALENVS   | where is virtualenv home?         | ~/.virtualenvs        |
 
-or else call the scripts "on the spot" like this:
+Here is a minimal example of what you can put in your =$HOME/.bashrc=:
 
-: CFG_INVENIO_HOSTNAME=newbox invenio-retest-demo-site --yes-i-know
+: export CFG_INVENIO_HOSTNAME=doc
+: export CFG_INVENIO_DOMAINNAME=example.org
+: export CFG_INVENIO_ADMIN=john.doe@example.org
 
-Note that devscripts assume that you have a running Invenio instance
-installed in =CFG_INVENIO_PREFIX= on the box.  If you did not have
-Invenio installed yet, then follow pages like [[http://invenio-software.org/wiki/Installation/InvenioOnDebian][Invenio on Debian]]; it
-takes only a few minutes to install Invenio for the first time.
+Note that if you don't set up CFG variables, you can still call
+devscripts "on the spot", for example:
+
+: CFG_INVENIO_HOSTNAME=newbox CFG_INVENIO_USER=apache invenio-retest-demo-site --yes-i-know
+
+** Install Invenio
+
+Note that devscripts further assume that you have a running Invenio
+instance installed on your box.  If you do not have Invenio installed
+yet, then follow pages like [[http://invenio-software.org/wiki/Installation/InvenioOnDebian][Invenio on Debian]]; it takes only a few
+minutes to install Invenio for the first time.
+
+** Set up sudo rights
+
+Some devscripts, especially ones that recreate Invenio demo site for
+you, further assume that you have certain =sudo= rights to execute
+certain commands:
+
+#+BEGIN_EXAMPLE
+$ cat /etc/sudoers.d/johndoe
+johndoe ALL=(www-data) NOPASSWD: ALL, \
+            (root) NOPASSWD: /bin/rm -rf /opt/invenio/var/tmp/ooffice-tmp-files, \
+            (root) NOPASSWD: /bin/mkdir -p /opt/invenio/var/tmp/ooffice-tmp-files, \
+            (root) NOPASSWD: /bin/chown -R nobody /opt/invenio/var/tmp/ooffice-tmp-files, \
+            (root) NOPASSWD: /bin/chmod -R 755 /opt/invenio/var/tmp/ooffice-tmp-files, \
+            (root) NOPASSWD: /etc/init.d/apache2, \
+            (root) NOPASSWD: /etc/init.d/mysql
+#+END_EXAMPLE
 
 * Usage
 
