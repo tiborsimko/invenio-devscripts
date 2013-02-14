@@ -312,7 +312,24 @@ def detect_file_installation_place(afile):
     if not afile_extension:
         return '/tmp/ERROR-UNKNOWN-DESTINATION-PLEASE-INSPECT-AND-ENRICH-RULES'
     elif afile_extension in ('.py'):
-        return CFG_PREFIX + '/lib/python/invenio/'
+        if afile_name.lower().startswith('bfe_'):
+            return CFG_PREFIX + '/lib/python/invenio/bibformat_elements/'
+        elif afile_name.lower().startswith('wsm_'):
+            return CFG_PREFIX + '/lib/python/invenio/websubmit_file_metadata_plugins/'
+        elif afile_name.lower().startswith('bst_'):
+            return CFG_PREFIX + '/lib/python/invenio/bibsched_tasklets/'
+        elif afile_name.lower().startswith('bom_'):
+            return CFG_PREFIX + '/lib/python/invenio/bibdocfile_plugins/'
+        elif os.path.exists(afile):
+            # detect based on content
+            file_content = open(afile).read()
+            if afile_name.lower().endswith('Service') and \
+             "Search Service Plugin" in file_content:
+                return CFG_PREFIX + '/lib/python/invenio/goto_plugins/'
+            elif '(parameters, curdir, form, user_info=None' in file_content:
+                return CFG_PREFIX + '/lib/python/invenio/websubmit_functions/'
+        else:
+            return CFG_PREFIX + '/lib/python/invenio/'
     elif afile_extension in ('.js'):
         return CFG_PREFIX + '/var/www/js/'
     elif afile_extension in ('.css', '.png', '.gif', '.jpg'):
