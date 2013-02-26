@@ -241,7 +241,7 @@ def normalise_commitid(commitid, repodir):
     # we have single commit situation, so detect commitid's sha1:
     os.chdir(repodir)
     process = subprocess.Popen(['git', 'log', commitid, '-n1',
-                                '--pretty=oneline'],
+                                '--pretty=oneline', '--abbrev-commit'],
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
     out, err = process.communicate()
@@ -253,7 +253,7 @@ def normalise_commitid(commitid, repodir):
             print '[ERROR] See `%s --help\'.' % sys.argv[0]
             sys.exit(1)
     if out:
-        return out.split()[0].strip()[:7] # pylint: disable=E1103
+        return out.split()[0].strip().split(' ', 1)[0] # pylint: disable=E1103
 
     raise StandardError('[ERROR] Whoops, this should not have happened.')
 
