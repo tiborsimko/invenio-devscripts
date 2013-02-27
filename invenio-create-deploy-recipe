@@ -284,6 +284,36 @@ def detect_db_changes(commitid, repodir):
         print out
         print '#+END_EXAMPLE'
 
+def detect_submission_change(afile):
+    """
+    Detect whether file is a submission dump. Assume that dump files
+    are named *_db_dump.sql
+
+    Return (0, None, '') when the file is not a submission dump.
+    Return (1, None, msg) when the file is a submission dump that could not be clearly identified
+    Return (2, METHOD, SUBMISSION_DOCTYPE) when the file is a submission dump for SUBMISSION_DOCTYPE, dumped using --method=METHOD
+    """
+    if afile.lower().endswith('_db_dump.sql'):
+        try:
+            fd = open(afile)
+            submission_doctype_line = fd.readline().rstrip()
+            submission_method_line = fd.readline().rstrip()
+        except Exception, e:
+            return (1, None, "Could not read submission dump parameters for %s: %s" % (afile, e))
+
+        try:
+            submission_doctype = submission_doctype_line.split(' ')[1]
+        except Exception, e:
+            return (1, None, "Unknown submission doctype for %s: %s" % (afile, submission_doctype_line))
+
+        if submission_method_line.startswith('-- Extra:NAMES'):
+            return (2, 'NAMES', submission_doctype)
+        elif submission_method_line.startswith('-- Extra:RELATIONS'):
+            return (2, 'RELATIONS', submission_doctype)
+        else:
+            return (1, None, "Unknown dump method for %s: %s" % (afile, submission_method_line))
+
+    return (0, None, '')
 
 def detect_file_installation_place(afile):
     """
@@ -418,10 +448,16 @@ def write_single_repo_deploy_recipe_body_via_filecopy(commitid, repodir):
     Write recipe body for deploying commitid from REPODIR via file copy.
     """
     l_file_targetdir = [] # list of tuples (afile, afile_target_dir) to install
+    l_file_submissiondump = [] # list of tuples (afile, dump_method, sbm_doctype) to install as submission
     for afile in get_commit_files(commitid, repodir):
-        afile_target_dir = detect_file_installation_place(afile)
-        if afile_target_dir:
-            l_file_targetdir.append((afile, afile_target_dir))
+        (is_dump_file_p, relation, msg) = detect_submission_change(afile)
+        if is_dump_file_p:
+            l_file_submissiondump.append((afile, relation, msg))
+        else:
+            afile_target_dir = detect_file_installation_place(afile)
+            if afile_target_dir:
+                l_file_targetdir.append((afile, afile_target_dir))
+
     print """\
 #+BEGIN_SRC sh
 sudo -u %(apache)s /usr/bin/id
@@ -441,6 +477,32 @@ sudo -u %(apache)s cp %(afile)s %(afile_target_dir)s""" % \
         print """\
 colordiff %(afile)s %(afile_target_dir)s""" % \
         {'afile': afile, 'afile_target_dir': afile_target_dir}
+
+    for afile, afile_sbm_method, afile_sbm_doctype in l_file_submissiondump:
+        if afile_sbm_method:
+            print "\
+%(prefixdir)s/bin/websubmitadmin --diff=%(sbm_doctype)s -id,o -m %(sbm_dump_method)s < %(afile)s | less -S" % \
+              {'prefixdir': CFG_PREFIX,
+               'sbm_doctype': afile_sbm_doctype,
+               'sbm_dump_method': afile_sbm_method,
+               'afile': afile}
+    for afile, afile_sbm_method, afile_sbm_doctype in l_file_submissiondump:
+        if afile_sbm_method:
+            print """\
+sudo -u %(apache)s %(prefixdir)s/bin/dbexec < %(afile)s""" % \
+        {'afile': afile,
+         'apache': CFG_INVENIO_USER,
+         'prefixdir': CFG_PREFIX}
+        else:
+            print "[ERROR]", afile_sbm_doctype
+    for afile, afile_sbm_method, afile_sbm_doctype in l_file_submissiondump:
+        if afile_sbm_method:
+            print "\
+%(prefixdir)s/bin/websubmitadmin --diff=%(sbm_doctype)s -id,o -m %(sbm_dump_method)s < %(afile)s | less -S" % \
+              {'prefixdir': CFG_PREFIX,
+               'sbm_doctype': afile_sbm_doctype,
+               'sbm_dump_method': afile_sbm_method,
+               'afile': afile}
     print """\
 sudo /etc/init.d/httpd graceful
 #+END_SRC
