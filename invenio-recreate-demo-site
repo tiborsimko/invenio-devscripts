@@ -125,6 +125,15 @@ CFG_BIBAUTHORID_AUTHOR_TICKET_ADMIN_EMAIL = ${CFG_INVENIO_ADMIN}" | \
 if grep -q create-secret-key INSTALL; then
     sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --update-config-py \
                                                                  --create-secret-key
+    # FIXME: the following line is a hack that was needed to overcome
+    # certain virtualenv confusion at times.  The confusion was
+    # leading to a situation where it was not possible to import
+    # generated CFG_SITE_SECRET_KEY later; the system still saw the
+    # old empty key value.  The line below deletes corresponding pyc
+    # file which solves the problem in a workaround way until the
+    # issue is fully debugged.  Ugly, but works, and does not harm
+    # anything.
+    sudo -u $CFG_INVENIO_USER rm -f $CFG_INVENIO_PREFIX/lib/python/invenio/config.pyc
 fi
 
 # update Invenio and Apache configuration with this information:
