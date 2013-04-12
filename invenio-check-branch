@@ -9,7 +9,7 @@
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2011, 2012 CERN.
+# Copyright (C) 2011, 2012, 2013 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ kwaliteefileold=/tmp/$(basename $0)-$yyyymmddhhmmss-$BRANCHOLD
 kwaliteefilenew=/tmp/$(basename $0)-$yyyymmddhhmmss-$BRANCHNEW
 
 # detect which files to check:
-checkfiles=$(git log $BRANCHOLD..$BRANCHNEW --pretty=format: --name-only | grep '\.py')
+checkfiles=$(git log $BRANCHOLD..$BRANCHNEW --pretty=format: --name-only | grep '\.py' | sort | uniq)
 echo "[INFO] Going to check the following files from $BRANCHOLD to $BRANCHNEW:"
 echo $checkfiles
 
