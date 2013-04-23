@@ -136,9 +136,8 @@ if grep -q create-secret-key INSTALL; then
     sudo -u $CFG_INVENIO_USER rm -f $CFG_INVENIO_PREFIX/lib/python/invenio/config.pyc
 fi
 
-# update Invenio and Apache configuration with this information:
+# update Invenio with this information:
 sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --update-all
-sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-apache-conf
 
 # MySQL-5.5 hack: before dropping and recreating tables, let's stop
 # Apache and let's restart MySQL to free any DB connections we may
@@ -155,6 +154,12 @@ $CFG_INVENIO_PREFIX/bin/dbexec < $CFG_INVENIO_PREFIX/lib/sql/invenio/tabdrop.sql
 
 # drop and recreate tables and Atlantis demo site:
 sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-tables --yes-i-know
+
+# update Apache configuration now: (this needs to be done after table
+# creation in the next branch)
+sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-apache-conf
+
+# create demo site
 sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-demo-site --yes-i-know
 
 # MySQL-5.5 hack: restart Apache back:
