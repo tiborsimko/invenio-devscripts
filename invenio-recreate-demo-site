@@ -123,8 +123,8 @@ CFG_BIBAUTHORID_AUTHOR_TICKET_ADMIN_EMAIL = ${CFG_INVENIO_ADMIN}" | \
 
 # if applicable, create secret key:
 if grep -q create-secret-key INSTALL; then
-    sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --update-config-py \
-                                                                 --create-secret-key
+    sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --update-config-py
+    sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-secret-key
     # FIXME: the following line is a hack that was needed to overcome
     # certain virtualenv confusion at times.  The confusion was
     # leading to a situation where it was not possible to import
@@ -137,9 +137,8 @@ if grep -q create-secret-key INSTALL; then
 fi
 
 # update Invenio and Apache configuration with this information:
-sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --update-all \
-                                                             --create-apache-conf \
-                                                             --yes-i-know
+sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --update-all
+sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-apache-conf
 
 # MySQL-5.5 hack: before dropping and recreating tables, let's stop
 # Apache and let's restart MySQL to free any DB connections we may
@@ -155,16 +154,14 @@ sudo $CFG_INVENIO_MYSQLCTL restart
 $CFG_INVENIO_PREFIX/bin/dbexec < $CFG_INVENIO_PREFIX/lib/sql/invenio/tabdrop.sql
 
 # drop and recreate tables and Atlantis demo site:
-sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-tables \
-                                                             --create-demo-site \
-                                                             --yes-i-know
+sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-tables --yes-i-know
+sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-demo-site --yes-i-know
 
 # MySQL-5.5 hack: restart Apache back:
 sudo $CFG_INVENIO_APACHECTL start
 
 # load Atlantis demo records:
-sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --load-demo-records \
-                                                             --yes-i-know
+sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --load-demo-records --yes-i-know
 
 # restart Invenio WSGI app:
 sudo -u $CFG_INVENIO_USER touch $CFG_INVENIO_PREFIX/var/www-wsgi/invenio.wsgi
