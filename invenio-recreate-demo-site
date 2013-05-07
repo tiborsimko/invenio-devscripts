@@ -89,6 +89,11 @@ if grep -q install-jquery-tokeninput INSTALL; then
     sudo -u $CFG_INVENIO_USER make -s install-jquery-tokeninput
 fi
 
+# if applicable, install also Plupload (for 'next' branch):
+if grep -q install-plupload-plugin INSTALL; then
+    sudo -u $CFG_INVENIO_USER make -s install-plupload-plugin
+fi
+
 # make special sudo powered place for LibreOffice:
 sudo mkdir -p $CFG_INVENIO_PREFIX/var/tmp/ooffice-tmp-files
 sudo chown -R nobody $CFG_INVENIO_PREFIX/var/tmp/ooffice-tmp-files
