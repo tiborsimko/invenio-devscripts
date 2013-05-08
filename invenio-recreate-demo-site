@@ -160,6 +160,11 @@ $CFG_INVENIO_PREFIX/bin/dbexec < $CFG_INVENIO_PREFIX/lib/sql/invenio/tabdrop.sql
 # drop and recreate tables and Atlantis demo site:
 sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-tables --yes-i-know
 
+# if needed, load BibField configuration (useful for `next' branch):
+if grep -q load-bibfield-conf INSTALL; then
+    sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --load-bibfield-conf
+fi
+
 # update Apache configuration now: (this needs to be done after table
 # creation in the next branch)
 sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-apache-conf
