@@ -128,7 +128,7 @@ CFG_BIBAUTHORID_AUTHOR_TICKET_ADMIN_EMAIL = ${CFG_INVENIO_ADMIN}" | \
 
 # if applicable, create secret key:
 if grep -q create-secret-key INSTALL; then
-    sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --update-config-py
+    sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --update-all
     sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-secret-key
     # FIXME: the following line is a hack that was needed to overcome
     # certain virtualenv confusion at times.  The confusion was
