@@ -1,0 +1,77 @@
+#!/bin/bash
+#
+# A helper devscript to restore Invenio site from backup created by
+# `invenio-backup-site`.  Assumes certain sudo rights.
+#
+# For more information, see
+# <https://github.com/tiborsimko/invenio-devscripts>.
+#
+# Tibor Simko <tibor.simko@cern.ch>
+#
+# Copyright (C) 2013 CERN.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/>.
+
+# config section:
+CFG_INVENIO_PREFIX=${CFG_INVENIO_PREFIX:=/opt/invenio}
+CFG_INVENIO_USER=${CFG_INVENIO_USER:=www-data}
+CFG_INVENIO_APACHECTL=${CFG_INVENIO_APACHECTL:=/etc/init.d/apache2}
+
+# sanity check: CLI confirmation
+if [[ "$@" != *"--yes-i-know"* ]]; then
+    echo "[ERROR] You did not use --yes-i-know.  Not going to restore site backup."
+    exit
+fi
+
+# quit on errors and potentially unbound symbols:
+set -o errexit
+set -o nounset
+
+# read arguments:
+if [ $# -lt 2 ]; then
+    echo "[ERROR] Usage: $(basename $0) invenio-site-backup.tar --yes-i-know"
+    exit 1
+fi
+MYTARBALL=$1
+
+# check tarball file:
+if [ ! -e $MYTARBALL ]; then
+    echo "[ERROR] Backup file '$MYTARBALL' does not seem to exist."
+    exit 1
+fi
+
+# perparations: stop Apache:
+sudo $CFG_INVENIO_APACHECTL stop
+
+# preparations: stop bibsched queue:
+if [ -f $CFG_INVENIO_PREFIX/bin/bibsched ]; then
+    echo "[INFO] Stopping bibsched queue..."
+    sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/bibsched stop
+fi
+
+# step one: roll out /opt/invenio:
+sudo -u $CFG_INVENIO_USER rm -rf $CFG_INVENIO_PREFIX/*
+MYOLDDIR=$(pwd)
+cd /
+sudo -u $CFG_INVENIO_USER tar xfp $MYTARBALL
+cd $MYOLDDIR
+
+# step two: roll out DB:
+sudo -u $CFG_INVENIO_USER gzip -cd $CFG_INVENIO_PREFIX/var/log/*dbdump*sql.gz | $CFG_INVENIO_PREFIX/bin/dbexec
+
+# restart Apache:
+sudo $CFG_INVENIO_APACHECTL restart
+
+# we are done:
+echo "[INFO] Done."

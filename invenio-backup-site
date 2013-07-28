@@ -1,0 +1,65 @@
+#!/bin/bash
+#
+# A helper devscript to backup Invenio site.  Does DB dump and makes
+# tarball of /opt/invenio.  Assumes certain sudo rights.
+#
+# For more information, see
+# <https://github.com/tiborsimko/invenio-devscripts>.
+#
+# Tibor Simko <tibor.simko@cern.ch>
+#
+# Copyright (C) 2013 CERN.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/>.
+
+# config section:
+CFG_INVENIO_PREFIX=${CFG_INVENIO_PREFIX:=/opt/invenio}
+CFG_INVENIO_USER=${CFG_INVENIO_USER:=www-data}
+CFG_INVENIO_APACHECTL=${CFG_INVENIO_APACHECTL:=/etc/init.d/apache2}
+
+# sanity check: CLI confirmation
+if [[ "$@" != *"--yes-i-know"* ]]; then
+    echo "[ERROR] You did not use --yes-i-know.  Not going to create site backup."
+    exit
+fi
+
+# quit on errors and potentially unbound symbols:
+set -o errexit
+set -o nounset
+
+# perparations: stop Apache:
+sudo $CFG_INVENIO_APACHECTL stop
+
+# preparations: stop bibsched queue:
+echo "[INFO] Stopping bibsched queue..."
+sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/bibsched stop
+
+# step one: make DB dump:
+echo "[INFO] Snaphotting database..."
+sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/dbdump -u admin -n 1
+MYTASKID=$(echo "SELECT MAX(id) FROM schTASK where proc='dbdump'" | $CFG_INVENIO_PREFIX/bin/dbexec -i | tail -1)
+sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/dbdump $MYTASKID
+
+# step two: make /opt/invenio tarball:
+echo "[INFO] Snapshotting $CFG_INVENIO_PREFIX..."
+MYFINALNAME=/tmp/$(sudo -u www-data /opt/invenio/bin/inveniocfg --get CFG_DATABASE_NAME)-site-backup-$(date +%Y-%m-%d-%H-%M-%S).tar
+sudo -u $CFG_INVENIO_USER tar cfph $MYFINALNAME $CFG_INVENIO_PREFIX/*
+
+# restart Apache:
+sudo $CFG_INVENIO_APACHECTL start
+
+# we are done:
+echo "[INFO] Created $MYFINALNAME."
+echo "[INFO] To restore, run 'invenio-restore-site $MYFINALNAME'."
+echo "[INFO] Done."

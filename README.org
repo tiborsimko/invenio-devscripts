@@ -20,6 +20,8 @@ useful when hacking on [[http://invenio-software.org/][Invenio]].
 - invenio-recreate-demo-site :: recreate demo site
 - invenio-retest-demo-site :: rerun test suite on recreated demo site
 - invenio-initialise-virtualenv :: initialise virtualenv for Invenio development
+- invenio-backup-site :: create backup file for the given Invenio site instance
+- invenio-restore-site :: restore Invenio site instance from the backup file
 - invenio-create-deploy-recipe :: create deploy recipes
 - invenio-check-AUTHORS :: check whether all committers are well
      present in AUTHORS or THANKS files
@@ -193,6 +195,12 @@ use this devscript to reinstall the Atlantis demo site anew.  Please
 beware, because =invenio-recreate-demo-site= will erase your database
 tables and recreate your =/opt/invenio= anew.
 
+Installing Invenio demo site from scratch requires having an Internet
+connection and may take up to 15 minutes.  For a quicker technique to
+restore a vanilla Invenio demo site from a previously installed one,
+please see =invenio-backup-site= and =invenio-restore-site= devscripts
+below.
+
 ** invenio-retest-demo-site
 
 This devscript launches all unit/regression/web test suite cases on
@@ -273,6 +281,21 @@ git commit -a -m 'WebBar: fix for baz'    # commit the fix
 workon invenio-next
 firefox                                   # will show 'next' demo site with facets
 #+END_SRC
+
+** invenio-backup-site
+
+Creates backup file for the given Invenio site instance.  Basically
+dumps the current database content and creates tarball of every file
+under =/opt/invenio=.  The final backup file is named like
+=inveniomaint11-site-backup-2013-07-28-13-05-21.tar= and can be
+restored via =invenio-restore-site= devscript, see below.
+
+** invenio-restore-site
+
+Restores Invenio site instance from the backup file previously created
+by =invenio-backup-site= devscript, see above.  Basically, removes
+everything under =/opt/invenio=, and recreates database tables from
+the dump.
 
 ** invenio-create-deploy-recipe
 
