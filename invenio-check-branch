@@ -68,7 +68,7 @@ kwaliteefileold=/tmp/$(basename $0)-$yyyymmddhhmmss-$BRANCHOLD
 kwaliteefilenew=/tmp/$(basename $0)-$yyyymmddhhmmss-$BRANCHNEW
 
 # detect which files to check:
-checkfiles=$(git log $BRANCHOLD..$BRANCHNEW --pretty=format: --name-only | grep '\.py' | sort | uniq)
+checkfiles=$(git diff $BRANCHOLD..$BRANCHNEW --pretty=format: --name-only | grep '\.py' | sort | uniq)
 echo "[INFO] Going to check the following files from $BRANCHOLD to $BRANCHNEW:"
 echo $checkfiles
 
