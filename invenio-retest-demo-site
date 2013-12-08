@@ -5,7 +5,7 @@
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2011, 2012 CERN.
+# Copyright (C) 2011, 2012, 2013 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -81,16 +81,16 @@ if [ -f $saveregressiontestresults ]; then
     colordiff -u $saveregressiontestresults $regressiontestresults
 fi
 
-# run web tests:
-echo "[INFO] Running web test suite..."
-${CFG_INVENIO_PREFIX}/bin/inveniocfg --run-web-tests --yes-i-know > $webtestresults 2>&1
-sed -n '/^Ran [0-9]/,$p' $webtestresults
-
-# compare web test results against last run:
-if [ -f $savewebtestresults ]; then
-    echo "[INFO] Web test results compared against last run:"
-    colordiff -u $savewebtestresults $webtestresults
-fi
+## # run web tests:
+## echo "[INFO] Running web test suite..."
+## ${CFG_INVENIO_PREFIX}/bin/inveniocfg --run-web-tests --yes-i-know > $webtestresults 2>&1
+## sed -n '/^Ran [0-9]/,$p' $webtestresults
+##
+## # compare web test results against last run:
+## if [ -f $savewebtestresults ]; then
+##     echo "[INFO] Web test results compared against last run:"
+##     colordiff -u $savewebtestresults $webtestresults
+## fi
 
 # save results:
 read -p "[QUESTION] Do you wish to save these results? (y/n) [n] " answer
