@@ -35,7 +35,7 @@ fi
 set -o nounset
 
 # sanity check: hostname
-if [ "`hostname`" != "$CFG_INVENIO_HOSTNAME" ]; then
+if [ "`hostname -s`" != "$CFG_INVENIO_HOSTNAME" ]; then
     echo "[ERROR] This hostname is not whitelisted for recreating the demo site."
     exit
 fi
