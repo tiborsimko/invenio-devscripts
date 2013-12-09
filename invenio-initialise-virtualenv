@@ -15,7 +15,7 @@
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2012 CERN.
+# Copyright (C) 2012, 2013 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@ CFG_INVENIO_USER=${CFG_INVENIO_USER:=www-data}
 CFG_INVENIO_ADMIN=${CFG_INVENIO_ADMIN:=tibor.simko@cern.ch}
 CFG_INVENIO_DATABASE_NAME=${CFG_INVENIO_DATABASE_NAME:=invenio}
 CFG_INVENIO_DATABASE_USER=${CFG_INVENIO_DATABASE_USER:=invenio}
+CFG_INVENIO_DATABASE_PASS=${CFG_INVENIO_DATABASE_PASS:=my123p\$ss}
 CFG_INVENIO_APACHECTL=${CFG_INVENIO_APACHECTL:=/etc/init.d/apache2}
 CFG_INVENIO_MYSQLCTL=${CFG_INVENIO_MYSQLCTL:=/etc/init.d/mysql}
 CFG_INVENIO_VIRTUALENVS=${CFG_INVENIO_VIRTUALENVS:=$HOME/.virtualenvs}
@@ -91,6 +92,7 @@ cat > $VEHOME/$VENAME/bin/postactivate <<EOF1
 # set up configuration variables:
 export CFG_INVENIO_DATABASE_NAME=$DBNAME
 export CFG_INVENIO_DATABASE_USER=$DBNAME
+export CFG_INVENIO_DATABASE_PASS=$CFG_INVENIO_DATABASE_PASS
 
 # amend invenio symlink:
 sudo service apache2 stop
@@ -112,8 +114,7 @@ sudo rm /opt/invenio
 EOF2
 
 echo "[INFO] Setting up database..."
-echo "Please enter MySQL root password below."
-echo "CREATE DATABASE $DBNAME DEFAULT CHARACTER SET utf8; GRANT ALL PRIVILEGES ON $DBNAME.* TO $DBNAME@localhost IDENTIFIED BY 'my123p\$ss';" | mysql -u root -p -B
+echo "CREATE DATABASE $DBNAME DEFAULT CHARACTER SET utf8; GRANT ALL PRIVILEGES ON $DBNAME.* TO $DBNAME@localhost IDENTIFIED BY '$CFG_INVENIO_DATABASE_PASS';" | mysql -u root -B
 
 echo "[INFO] Installing pre-requisites..."
 if [[ "$@" = *"--use-pip"* ]]; then

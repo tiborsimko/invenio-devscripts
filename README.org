@@ -61,6 +61,7 @@ You will need to configure some of the following environment variables:
 | CFG_INVENIO_ADMIN         | who is admin of this instance?    | tibor.simko@cern.ch   |
 | CFG_INVENIO_DATABASE_NAME | what is database name?            | invenio               |
 | CFG_INVENIO_DATABASE_USER | what is database user?            | invenio               |
+| CFG_INVENIO_DATABASE_PASS | what is database user password?   | my123p$ss             |
 | CFG_INVENIO_APACHECTL     | how to restart Apache?            | /etc/init.d/apache2   |
 | CFG_INVENIO_MYSQLCTL      | how to restart MySQL?             | /etc/init.d/mysql     |
 | CFG_INVENIO_VIRTUALENVS   | where is virtualenv home?         | ~/.virtualenvs        |
