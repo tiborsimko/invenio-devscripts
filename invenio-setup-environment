@@ -1,0 +1,170 @@
+#!/bin/bash
+#
+# A helper devscript to set up Invenio development environment.
+# (Alters bashrc, sets up /opt/invenio, sets up Python invenio
+# symlinks.)  For more information, see
+# <https://github.com/tiborsimko/invenio-devscripts>.
+#
+# Tibor Simko <tibor.simko@cern.ch>
+#
+# Copyright (C) 2013 CERN.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/>.
+
+# sanity check: CLI confirmation
+if [ "$1" != "--yes-i-know" ]; then
+    echo "[ERROR] You did not use --yes-i-know.  Not going to set up Invenio development environment."
+    exit 1
+fi
+
+# sanity check: environment variables
+if [ -z "$CFG_INVENIO_SRCDIR" ]; then
+    echo "[ERROR] CFG_INVENIO_SRCDIR not set up.  Maybe you want to run invenio-kickstart?  Exiting."
+    exit 1
+fi
+if [ -z "$CFG_INVENIO_PORT_HTTP" ]; then
+    echo "[ERROR] CFG_INVENIO_PORT_HTTP not set up.  Maybe you want to run invenio-kickstart?  Exiting."
+    exit 1
+fi
+if [ -z "$CFG_INVENIO_PORT_HTTPS" ]; then
+    echo "[ERROR] CFG_INVENIO_PORT_HTTPS not set up.  Maybe you want to run invenio-kickstart?  Exiting."
+    exit 1
+fi
+
+# quit on errors and potentially unbound symbols:
+set -o errexit
+set -o nounset
+
+## show command execution:
+#set -o xtrace
+
+os_unknown () {
+    echo "[ERROR] Cannot detect OS version."
+    echo "[ERROR] Please contact authors.  Exiting."
+    exit 1
+}
+
+common_configure_home () {
+    if ! grep -q PATH=.*invenio-devscripts $HOME/.bashrc; then
+        echo "export PATH=${CFG_INVENIO_SRCDIR}-devscripts:\$PATH" >> $HOME/.bashrc
+    fi
+    if ! grep -q CFG_INVENIO_SRCDIR $HOME/.bashrc; then
+        echo "export CFG_INVENIO_SRCDIR=$CFG_INVENIO_SRCDIR" >> $HOME/.bashrc
+    fi
+    if ! grep -q CFG_INVENIO_PORT_HTTP $HOME/.bashrc; then
+        echo "export CFG_INVENIO_PORT_HTTP=$CFG_INVENIO_PORT_HTTP" >> $HOME/.bashrc
+    fi
+    if ! grep -q CFG_INVENIO_PORT_HTTPS $HOME/.bashrc; then
+        echo "export CFG_INVENIO_PORT_HTTPS=$CFG_INVENIO_PORT_HTTPS" >> $HOME/.bashrc
+    fi
+    if ! grep -q CFG_INVENIO_HOSTNAME $HOME/.bashrc; then
+        echo "export CFG_INVENIO_HOSTNAME=`hostname -s`" >> $HOME/.bashrc
+    fi
+    if ! grep -q CFG_INVENIO_DOMAINNAME $HOME/.bashrc; then
+        thishostname=`hostname -d`
+        if [ -z $thishostname ]; then
+            thishostname="localdomain"
+        fi
+        echo "export CFG_INVENIO_DOMAINNAME=$thishostname" >> $HOME/.bashrc
+    fi
+    if ! grep -q CFG_INVENIO_ADMIN $HOME/.bashrc; then
+        echo "export CFG_INVENIO_ADMIN=`whoami`@localhost" >> $HOME/.bashrc
+    fi
+    chmod go+rx $CFG_INVENIO_SRCDIR # so that sudo -u www-data make install would work later
+}
+
+redhat_configure_home () {
+    common_configure_home
+    if ! grep -q CFG_INVENIO_USER $HOME/.bashrc; then
+        echo "export CFG_INVENIO_USER=apache" >> $HOME/.bashrc
+    fi
+    if ! grep -q CFG_INVENIO_APACHECTL $HOME/.bashrc; then
+        echo "export CFG_INVENIO_APACHECTL=/etc/init.d/httpd" >> $HOME/.bashrc
+    fi
+    if ! grep -q CFG_INVENIO_MYSQLCTL $HOME/.bashrc; then
+        echo "export CFG_INVENIO_MYSQLCTL=/etc/init.d/mysqld" >> $HOME/.bashrc
+    fi
+}
+
+debian_configure_home () {
+    common_configure_home
+    if ! grep -q CFG_INVENIO_USER $HOME/.bashrc; then
+        echo "export CFG_INVENIO_USER=www-data" >> $HOME/.bashrc
+    fi
+    if ! grep -q CFG_INVENIO_APACHECTL $HOME/.bashrc; then
+        echo "export CFG_INVENIO_APACHECTL=/etc/init.d/apache2" >> $HOME/.bashrc
+    fi
+    if ! grep -q CFG_INVENIO_MYSQLCTL $HOME/.bashrc; then
+        echo "export CFG_INVENIO_MYSQLCTL=/etc/init.d/mysql" >> $HOME/.bashrc
+    fi
+}
+
+redhat_configure_opt () {
+    # apache user is not installed yet at this moment, so we shall use
+    # root; later after installing apache we'll fix the rights
+    sudo chgrp root /opt
+    sudo chmod g+w /opt
+    sudo mkdir -p /opt/invenio
+    sudo chown -R root.root /opt/invenio
+}
+
+debian_configure_opt () {
+    sudo chgrp www-data /opt
+    sudo chmod g+w /opt
+    sudo mkdir -p /opt/invenio
+    sudo chown -R www-data.www-data /opt/invenio
+}
+
+common_configure_symlinks () {
+    for pythonversion in python2.4 python2.6 python2.7; do
+        for libversion in lib lib64; do
+            for packageversion in site-packages dist-packages; do
+                if [ -d /usr/$libversion/$pythonversion/$packageversion/ ] && [ ! -L /usr/$libversion/$pythonversion/$packageversion/invenio ]; then
+                    sudo ln -s /opt/invenio/lib/python/invenio /usr/$libversion/$pythonversion/$packageversion/invenio
+                fi
+            done
+        done
+    done
+}
+
+redhat_configure_symlinks () {
+    sudo -u root mkdir -p /opt/invenio/lib/python/invenio
+    common_configure_symlinks
+}
+
+debian_configure_symlinks () {
+    sudo -u www-data mkdir -p /opt/invenio/lib/python/invenio
+    common_configure_symlinks
+}
+
+main () {
+    if [ -e /etc/redhat-release ]; then
+        redhat_configure_home
+        redhat_configure_opt
+        redhat_configure_symlinks
+    elif [ -e /etc/debian_version ]; then
+        debian_configure_home
+        debian_configure_opt
+        debian_configure_symlinks
+    else
+        os_unknown
+    fi
+}
+
+
+echo "[INFO] $0 started."
+main
+echo "[INFO] $0 finished."
+
+# end of file

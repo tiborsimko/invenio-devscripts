@@ -107,7 +107,7 @@ sudo chmod -R 755 $CFG_INVENIO_PREFIX/var/tmp/ooffice-tmp-files
 
 # set up invenio-local.conf:
 siteurl=${CFG_INVENIO_HOSTNAME}
-if [ "${CFG_INVENIO_DOMAINNAME}" = "localhost" ] || [ "${CFG_INVENIO_DOMAINNAME}" = "localdomain" ] || [ "${CFG_INVENIO_DOMAINNAME}" = "" ]; then
+if [ "${CFG_INVENIO_DOMAINNAME}" = "localhost" ] || [ "${CFG_INVENIO_DOMAINNAME}" = "localdomain" ]; then
     siteurl="localhost"
 else
     siteurl=${siteurl}.${CFG_INVENIO_DOMAINNAME}
