@@ -72,7 +72,13 @@ common_configure_home () {
         echo "export CFG_INVENIO_HOSTNAME=`hostname -s`" >> $HOME/.bashrc
     fi
     if ! grep -q CFG_INVENIO_DOMAINNAME $HOME/.bashrc; then
-        thishostname=`hostname -d`
+        if [ $(uname -s) = "FreeBSD" ]; then
+            # FreeBSD does not have "hostname -d" option, so use awk:
+            thishostname=$(hostname -f | awk '{print substr($0, index($0,".")+1)}')
+        else
+            # GNU/Linux can use "hostname -d":
+            thishostname=`hostname -d`
+        fi
         if [ -z $thishostname ]; then
             thishostname="localdomain"
         fi
@@ -110,6 +116,19 @@ debian_configure_home () {
     fi
 }
 
+freebsd_configure_home () {
+    common_configure_home
+    if ! grep -q CFG_INVENIO_USER $HOME/.bashrc; then
+        echo "export CFG_INVENIO_USER=www" >> $HOME/.bashrc
+    fi
+    if ! grep -q CFG_INVENIO_APACHECTL $HOME/.bashrc; then
+        echo "export CFG_INVENIO_APACHECTL=/usr/local/etc/rc.d/apache22" >> $HOME/.bashrc
+    fi
+    if ! grep -q CFG_INVENIO_MYSQLCTL $HOME/.bashrc; then
+        echo "export CFG_INVENIO_MYSQLCTL=/usr/local/etc/rc.d/mysql-server" >> $HOME/.bashrc
+    fi
+}
+
 redhat_configure_opt () {
     # apache user is not installed yet at this moment, so we shall use
     # root; later after installing apache we'll fix the rights
@@ -126,9 +145,17 @@ debian_configure_opt () {
     sudo chown -R www-data.www-data /opt/invenio
 }
 
+freebsd_configure_opt () {
+    sudo mkdir -p /opt
+    sudo chgrp www /opt
+    sudo chmod g+w /opt
+    sudo mkdir -p /opt/invenio
+    sudo chown -R www:www /opt/invenio
+}
+
 common_configure_symlinks () {
     for pythonversion in python2.4 python2.6 python2.7; do
-        for libversion in lib lib64; do
+        for libversion in lib lib64 local/lib local/lib64; do
             for packageversion in site-packages dist-packages; do
                 if [ -d /usr/$libversion/$pythonversion/$packageversion/ ] && [ ! -L /usr/$libversion/$pythonversion/$packageversion/invenio ]; then
                     sudo ln -s /opt/invenio/lib/python/invenio /usr/$libversion/$pythonversion/$packageversion/invenio
@@ -148,6 +175,11 @@ debian_configure_symlinks () {
     common_configure_symlinks
 }
 
+freebsd_configure_symlinks () {
+    sudo -u www mkdir -p /opt/invenio/lib/python/invenio
+    common_configure_symlinks
+}
+
 main () {
     if [ -e /etc/redhat-release ]; then
         redhat_configure_home
@@ -157,6 +189,10 @@ main () {
         debian_configure_home
         debian_configure_opt
         debian_configure_symlinks
+    elif [ $(uname -s) = "FreeBSD" ]; then
+        freebsd_configure_home
+        freebsd_configure_opt
+        freebsd_configure_symlinks
     else
         os_unknown
     fi

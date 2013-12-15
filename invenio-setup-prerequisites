@@ -150,6 +150,25 @@ debian_install_packages () {
     cd $olddir
 }
 
+freebsd_install_packages () {
+    # install system packages
+    sudo BATCH=yes pkg_add -rF git python w3m wget mysql55-server \
+        ap22-mod_wsgi ap22-mod_xsendfile libxml2 libxslt
+    # install distribute and pip
+    curl http://python-distribute.org/distribute_setup.py | sudo python
+    sudo easy_install pip==1.3.1
+    # install Python dependencies via pip
+    olddir=`pwd`
+    cd $CFG_INVENIO_SRCDIR
+    for reqfile in requirements.txt requirements-extras.txt \
+        requirements-flask.txt requirements-flask-ext.txt; do
+        if [ -e $reqfile ]; then
+            sudo pip install -r $reqfile
+        fi
+    done
+    cd $olddir
+}
+
 redhat_configure_mysql () {
     sudo /sbin/service mysqld start
     sudo /sbin/chkconfig mysqld on
@@ -161,6 +180,15 @@ redhat_configure_mysql () {
 
 debian_configure_mysql () {
     sudo /etc/init.d/mysql start
+    mysqladmin -u root password ''
+    echo "DROP DATABASE IF EXISTS $CFG_INVENIO_DATABASE_NAME;" | mysql -u root -B
+    echo "CREATE DATABASE $CFG_INVENIO_DATABASE_NAME DEFAULT CHARACTER SET utf8;" | mysql -u root -B
+    echo "GRANT ALL PRIVILEGES ON $CFG_INVENIO_DATABASE_NAME.* TO $CFG_INVENIO_DATABASE_USER@localhost IDENTIFIED BY '$CFG_INVENIO_DATABASE_PASS'" | mysql -u root -B
+}
+
+freebsd_configure_mysql () {
+    echo "mysql_enable=\"YES\"" | sudo tee -a /etc/rc.conf
+    sudo $CFG_INVENIO_MYSQLCTL restart
     mysqladmin -u root password ''
     echo "DROP DATABASE IF EXISTS $CFG_INVENIO_DATABASE_NAME;" | mysql -u root -B
     echo "CREATE DATABASE $CFG_INVENIO_DATABASE_NAME DEFAULT CHARACTER SET utf8;" | mysql -u root -B
@@ -221,6 +249,41 @@ debian_configure_apache () {
     sudo /etc/init.d/apache2 restart
 }
 
+freebsd_configure_apache () {
+    # enable apache right after restarts:
+    echo "apache22_enable=\"YES\"" | sudo tee -a /etc/rc.conf
+    # set up accf_http module:
+    if ! grep -q 'accf_http_load="YES"' /boot/loader.conf; then
+        echo 'accf_http_load="YES"' | sudo tee -a /boot/loader.conf
+    fi
+    if ! $(kldstat | grep -q accf_http); then
+        sudo kldload accf_http
+    fi
+    # set up accf_data module:
+    if ! grep -q 'accf_http_data="YES"' /boot/loader.conf; then
+        echo 'accf_http_data="YES"' | sudo tee -a /boot/loader.conf
+    fi
+    if ! $(kldstat | grep -q accf_data); then
+        sudo kldload accf_data
+    fi
+    # set up vhost link:
+    if [ ! -L /usr/local/etc/apache22/Includes/invenio-apache-vhost.conf ]; then
+        sudo ln -s /opt/invenio/etc/apache/invenio-apache-vhost.conf /usr/local/etc/apache22/Includes/
+    fi
+    # make sure an empty vhost config file exists:
+    if [ ! -e /opt/invenio/etc/apache/invenio-apache-vhost.conf ]; then
+        # create it empty for the time being so that apache would start
+        sudo mkdir -p /opt/invenio/etc/apache/
+        sudo touch /opt/invenio/etc/apache/invenio-apache-vhost.conf
+        sudo chown -R www:www /opt/invenio
+    fi
+    # FIXME set up SSL certificate
+    # alter default config so that Apache would start:
+    sudo perl -pi -e 's,^#ServerName www.example.com:80,ServerName localhost.localdomain:80,s' /usr/local/etc/apache22/httpd.conf
+    # start apache:
+    sudo $CFG_INVENIO_APACHECTL restart
+}
+
 redhat_configure_selinux () {
     if grep -q ^SELINUX=enforcing /etc/selinux/config; then
         sudo /usr/sbin/setenforce Permissive
@@ -265,6 +328,10 @@ main () {
         debian_install_packages
         debian_configure_mysql
         debian_configure_apache
+    elif [ $(uname -s) = "FreeBSD" ]; then
+        freebsd_install_packages
+        freebsd_configure_mysql
+        freebsd_configure_apache
     else
         os_unknown
 
