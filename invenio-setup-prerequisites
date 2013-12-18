@@ -67,7 +67,9 @@ os_unknown () {
 
 redhat_enable_epel () {
     if ! grep -q CentOS /etc/redhat-release; then
+        set +o errexit # let us continue if yum-conf-epel does not exist, e.g. on SLC
         sudo yum install -y yum-conf-epel
+        set -o errexit
     fi
 }
 
@@ -77,7 +79,7 @@ redhat5_install_packages () {
         apr-util-devel cyrus-sasl-devel db4-devel distcache epydoc \
         expat-devel freetype-devel gettext-devel gpm httpd libXtst \
         libart_lgpl libgcj libgcrypt-devel libgpg-error-devel \
-        libjpeg-devel libxslt libxslt-devel libxslt-python lynx mod_ssl \
+        libxslt libxslt-devel libxslt-python lynx mod_ssl \
         mod_wsgi mx mysql mysql-devel mysql-server numpy openldap-devel \
         perl-DBD-MySQL postgresql-libs python-devel python-setuptools \
         python-wsgiref screen vim-enhanced w3m git pylint ipython \
@@ -102,12 +104,7 @@ redhat6_install_packages () {
     sudo yum install -y git python-devel mod_wsgi mod_ssl mysql-server \
         mysql-devel redis libxslt-devel automake gettext gettext-devel w3m
     # get rid of some system Python packages, if installed, because we'll use pip later
-    for pkg in python-nose numpy python-matplotlib seekwatcher python-setuptools python-pip; do
-        if rpm -q $pkg; then
-            sudo rpm -e $pkg
-            exit 1
-        fi
-    done
+    sudo yum erase -y python-nose numpy python-matplotlib seekwatcher python-setuptools python-pip
     # install pip
     curl http://python-distribute.org/distribute_setup.py | sudo python
     sudo easy_install pip==1.3.1
