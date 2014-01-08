@@ -331,7 +331,15 @@ def detect_file_installation_place(afile):
     afile_basename = os.path.basename(afile)
 
     # 1st: try to find the file pathname:
-    process = subprocess.Popen(['find', CFG_PREFIX, '-name', afile_basename],
+    process = subprocess.Popen(['find', CFG_PREFIX,
+                                '(', '-path', CFG_PREFIX + '/var/cache',
+                                '-o', '-path', CFG_PREFIX + '/var/tmp',
+                                '-o', '-path', CFG_PREFIX + '/var/tmp-shared',
+                                '-o', '-path', CFG_PREFIX + '/var/data',
+                                '-o', '-path', CFG_PREFIX + '/var/log',
+                                ')', '-prune',
+                                '-o',  '-name', afile_basename, '-print'
+                                ],
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE)
     out, err = process.communicate()
