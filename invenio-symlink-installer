@@ -1,0 +1,89 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+## This file is part of Invenio.
+## Copyright (C) 2012 CERN.
+##
+## Invenio is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License as
+## published by the Free Software Foundation; either version 2 of the
+## License, or (at your option) any later version.
+##
+## Invenio is distributed in the hope that it will be useful, but
+## WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+## General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with Invenio; if not, write to the Free Software Foundation, Inc.,
+## 59 Temple Place, Suite 330, Boston, MA 02111-1307, USA.
+
+import sys
+import os
+import getopt
+
+__doc__ = """\
+Simple GNU install drop-in replacement that creates symlinks instead of copying
+file over.
+
+Usage:
+$ INSTALL=%s ./configure [CONFIGURE OPTIONS]
+""" % sys.argv[0]
+
+
+def usage():
+    """
+    Print usage instruction and exit.
+    """
+    print >> sys.stderr, __doc__
+    sys.exit(1)
+
+def main():
+    """
+    Parse the minimal set of GNU install CLI arguments in order to install
+    Invenio using symlinks.
+    """
+    optlist, args = getopt.gnu_getopt(sys.argv[1:], 'bvVfFh:m:o:psS:t:TvZ:', ["backup=", "compare", "group=", "mode=", "owner=", "preserve-timestamps", "strip", "strip-program=", "target-directory=", "no-target-directory", "verbose", "preserve-context", "context=", "help", "version"])
+    files = args[:-1]
+    if args:
+        dd = args[-1]
+    else:
+        dd = None
+    cwd = os.getcwd()
+    verbose = False
+    try:
+        for opt, value in optlist:
+            if opt in ('-v', '--verbose'):
+                verbose = True
+            elif opt in ('-T', '--no-target-directory'):
+                dd = None
+                files = args
+            elif opt in ('-t', '--target-directory'):
+                dd = value
+                files = args
+            elif opt in ('-h', '--help'):
+                usage()
+        if dd:
+            if not os.path.exists(dd):
+                os.makedirs(dd)
+            for file in files:
+                from_file = os.path.join(cwd, file)
+                to_file = os.path.join(dd, file)
+                if os.path.exists(to_file):
+                    os.remove(to_file)
+                os.symlink(from_file, to_file)
+                if verbose:
+                    print "Linking %s to %s" % (from_file, to_file)
+        else:
+            from_file = os.path.join(cwd, args[0])
+            to_file = args[1]
+            if os.path.exists(to_file):
+                os.remove(to_file)
+            os.symlink(from_file, to_file)
+            if verbose:
+                print "Linking %s to %s" % (from_file, to_file)
+    except Exception, err:
+        print >> sys.stderr, "ERROR: in calling %s: %s" % (' '.join(sys.argv), err)
+        usage()
+
+if __name__ == "__main__":
+    main()

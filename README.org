@@ -34,6 +34,8 @@ useful when hacking on [[http://invenio-software.org/][Invenio]].
      repository
 - invenio-code-browser :: generate and publish Invenio code browser
      pages
+- invenio-symlink-installer :: GNU install drop-in replacement that
+     could be used to symlink files instead of copying them.
 
 * Installation
 
@@ -68,6 +70,7 @@ You will need to configure some of the following environment variables:
 | CFG_INVENIO_APACHECTL     | how to restart Apache?            | /etc/init.d/apache2   |
 | CFG_INVENIO_MYSQLCTL      | how to restart MySQL?             | /etc/init.d/mysql     |
 | CFG_INVENIO_VIRTUALENVS   | where is virtualenv home?         | ~/.virtualenvs        |
+| CFG_INVENIO_SYMLINK_INSTALLER  | install via symlinks?             | 0                     |
 
 Here is a minimal example of what you can put in your =$HOME/.bashrc=:
 
@@ -288,6 +291,26 @@ and a hot key for your preferred editor; an example for Emacs:
 #+END_SRC
 
 This allows you to press =C-c i= to install your edits.
+
+** invenio-symlink-installer
+
+Optional experimental component permitting the edition of files in the
+source directory instead of using =invenio-make-install= devscript to
+put them to the target place.  Useful for developers who are not using
+=C-c i= style of shortcuts mentioned above.  (Say Eclipse/PyDev
+instead of Emacs.)
+
+If you have set CFG_INVENIO_SYMLINK_INSTALLER=1, note that the
+=./configure= script will be executed with INSTALL=`which
+invenio-symlink-installer`, which will cause the
+=invenio-symlink-installer= script to be used instead of the
+system-wide GNU =install= utility.  Upon "make install" this script
+will cause the symlinking of source files (directories are still
+created in the regular way). Note that this will mean that if you
+modify a file in the install tree, the file will be actually changed
+in the source tree and vice-versa (so beware of doing "git checkout
+other-branch" as this will change in place the content of the deployed
+tree).
 
 ** invenio-check-kwalitee
 
