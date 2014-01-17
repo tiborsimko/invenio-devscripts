@@ -6,7 +6,7 @@
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2013 CERN.
+# Copyright (C) 2013, 2014 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -102,7 +102,8 @@ redhat5_install_packages () {
 redhat6_install_packages () {
     # install some system packages:
     sudo yum install -y git python-devel mod_wsgi mod_ssl mysql-server \
-        mysql-devel redis libxslt-devel automake gettext gettext-devel w3m
+        mysql-devel redis libxslt-devel automake gettext gettext-devel w3m \
+        hdf5-devel texlive
     # get rid of some system Python packages, if installed, because we'll use pip later
     sudo yum erase -y python-nose numpy python-matplotlib seekwatcher python-setuptools python-pip
     # install pip
@@ -129,7 +130,13 @@ debian_install_packages () {
         pdftk html2text giflib-tools pstotext netpbm \
         sbcl libapache2-mod-xsendfile openoffice.org \
         automake libmysqlclient-dev libxml2-dev libxslt-dev \
-        make postfix
+        make postfix texlive python-libxml2 python-libxslt1
+    # installing libhdf5-dev is OS version dependent:
+    if sudo apt-get install -y -s libhdf5-dev; then
+        sudo apt-get install -y libhdf5-dev
+    else
+        sudo apt-get install -y libhdf5-serial-dev
+    fi
     # install distribute and pip
     sudo apt-get remove -y python-setuptools python-pip
     sudo apt-get install -y curl
@@ -150,7 +157,7 @@ debian_install_packages () {
 freebsd_install_packages () {
     # install system packages
     sudo BATCH=yes pkg_add -rF git python w3m wget mysql55-server \
-        ap22-mod_wsgi ap22-mod_xsendfile libxml2 libxslt
+        ap22-mod_wsgi ap22-mod_xsendfile libxml2 libxslt hdf5
     # install distribute and pip
     curl http://python-distribute.org/distribute_setup.py | sudo python
     sudo easy_install pip==1.3.1
