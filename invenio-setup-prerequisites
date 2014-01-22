@@ -130,7 +130,8 @@ debian_install_packages () {
         pdftk html2text giflib-tools pstotext netpbm \
         sbcl libapache2-mod-xsendfile openoffice.org \
         automake libmysqlclient-dev libxml2-dev libxslt-dev \
-        make postfix texlive python-libxml2 python-libxslt1
+        make postfix texlive python-libxml2 python-libxslt1 \
+        redis-server
     # installing libhdf5-dev is OS version dependent:
     if sudo apt-get install -y -s libhdf5-dev; then
         sudo apt-get install -y libhdf5-dev
@@ -157,7 +158,8 @@ debian_install_packages () {
 freebsd_install_packages () {
     # install system packages
     sudo BATCH=yes pkg_add -rF git python w3m wget mysql55-server \
-        ap22-mod_wsgi ap22-mod_xsendfile libxml2 libxslt hdf5
+        ap22-mod_wsgi ap22-mod_xsendfile libxml2 libxslt hdf5 \
+        redis
     # install distribute and pip
     curl http://python-distribute.org/distribute_setup.py | sudo python
     sudo easy_install pip==1.3.1
