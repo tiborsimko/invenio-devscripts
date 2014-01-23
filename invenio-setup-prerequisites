@@ -132,6 +132,8 @@ debian_install_packages () {
         automake libmysqlclient-dev libxml2-dev libxslt-dev \
         make postfix texlive python-libxml2 python-libxslt1 \
         redis-server
+    # restart Redis explicitly; useful for Travis-CI VMs
+    sudo /usr/sbin/service redis-server restart
     # installing libhdf5-dev is OS version dependent:
     if sudo apt-get install -y -s libhdf5-dev; then
         sudo apt-get install -y libhdf5-dev
