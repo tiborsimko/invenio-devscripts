@@ -15,7 +15,7 @@
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2012, 2013 CERN.
+# Copyright (C) 2012, 2013, 2014 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -90,9 +90,9 @@ cat > $VEHOME/$VENAME/bin/postactivate <<EOF1
 #!/bin/bash
 
 # set up configuration variables:
-export CFG_INVENIO_DATABASE_NAME=$DBNAME
-export CFG_INVENIO_DATABASE_USER=$DBNAME
-export CFG_INVENIO_DATABASE_PASS=$CFG_INVENIO_DATABASE_PASS
+export CFG_INVENIO_DATABASE_NAME='$DBNAME'
+export CFG_INVENIO_DATABASE_USER='$DBNAME'
+export CFG_INVENIO_DATABASE_PASS='$CFG_INVENIO_DATABASE_PASS'
 
 # amend invenio symlink:
 sudo service apache2 stop
