@@ -151,12 +151,22 @@ other pre-requisites, clone Invenio sources into =~/private/src=
 directory, install Invenio and instantiate ready-to-be-used Invenio
 demo site.  All in fully automated, unassisted way.
 
-Usually tested on Debian, Ubuntu, Scientific Linux, CentOS.
+Usually tested on CentOS, Debian, FreeBSD, Scientific Linux, Ubuntu.
 
 Note that you can later chain on with =invenio-initialise-virtualenv=
 so that the same box could run =maint=, =master= and =next= branches
 of Invenio.  (This could be later added as a new option to the
 kickstarter.)
+
+Note that you can also pass a wanted branch value as an argument to
+=invenio-kickstart= in order to install some wanted Invenio branch
+development environment, such as =maint-1.1=.  This is useful e.g. on
+Scientific Linux 5 installations where only Invenio v1.1 or previous
+release series are working.  (Because SL5 uses Python-2.4.)  So, in
+order to install Invenio v1.1 based development environment on these
+boxes, you should add =maint-1.1= branch argument:
+
+: invenio-kickstart --yes-i-know --yes-i-really-know maint-1.1
 
 ** invenio-setup-environment
 

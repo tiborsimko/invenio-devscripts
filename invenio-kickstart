@@ -8,7 +8,7 @@
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2013 CERN.
+# Copyright (C) 2013, 2014 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,15 +29,23 @@ export CFG_INVENIO_PORT_HTTP=${CFG_INVENIO_PORT_HTTP:=80}
 export CFG_INVENIO_PORT_HTTPS=${CFG_INVENIO_PORT_HTTPS:=443}
 
 # sanity check: CLI confirmation
-if [ "$1" != "--yes-i-know" ]; then
+if [[ "$@" != *"--yes-i-know"* ]]; then
     echo "[ERROR] You did not use --yes-i-know.  Not going to kickstart Invenio on this machine."
     exit 1
 fi
 
-if [ "$2" != "--yes-i-really-know" ]; then
+if [[ "$@" != *"--yes-i-really-know"* ]]; then
     echo "[ERROR] You did not use --yes-i-really-know.  Not going to kickstart Invenio on this machine."
     exit 1
 fi
+
+# which branch are we installing?
+BRANCH=master # let's assume invenio/master by default
+for arg in "$@"; do
+    if [ "$arg" != "--yes-i-know" ] && [ "$arg" != "--yes-i-really-know" ]; then
+        BRANCH=$arg
+    fi
+done
 
 # quit on errors and potentially unbound symbols:
 set -o errexit
@@ -71,15 +79,7 @@ if [ -d invenio/.git ]; then
     echo "[INFO] invenio sources seem to be already installed."
 else
     git clone https://github.com/inveniosoftware/invenio.git
-
-    # Now, if we are using Python-2.4 only, i.e. on RHEL5 like systems,
-    # then force Invenio/maint-1.1 since Invenio/master requires
-    # Python-2.6 minimally:
-    if [ -e /etc/redhat-release ]; then
-        if grep -q ' 5.' /etc/redhat-release; then
-            (cd invenio && git checkout maint-1.1)
-        fi
-    fi
+    (cd invenio && git checkout $BRANCH)
 fi
 
 # set up env/opt/home development environment:
