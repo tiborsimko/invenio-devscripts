@@ -58,7 +58,7 @@ You will need to configure some of the following environment variables:
 | Variable                  | Documentation                     | Default value         |
 | CFG_INVENIO_SRCDIR        | where are Invenio sources?        | ~/private/src/invenio |
 | CFG_INVENIO_PREFIX        | where is Invenio installed?       | /opt/invenio          |
-| CFG_INVENIO_HOSTNAME      | what is allowed hostname?         | pcuds07               |
+| CFG_INVENIO_HOSTNAME      | what is allowed hostname?         | pcuds06               |
 | CFG_INVENIO_DOMAINNAME    | what is our domain name?          | cern.ch               |
 | CFG_INVENIO_PORT_HTTP     | what is our HTTP port number?     | 80                    |
 | CFG_INVENIO_PORT_HTTPS    | what is our HTTPS port number?    | 443                   |

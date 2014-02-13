@@ -23,7 +23,7 @@
 # config section:
 CFG_INVENIO_PREFIX=${CFG_INVENIO_PREFIX:=/opt/invenio}
 CFG_INVENIO_USER=${CFG_INVENIO_USER:=www-data}
-CFG_INVENIO_HOSTNAME=${CFG_INVENIO_HOSTNAME:=pcuds07}
+CFG_INVENIO_HOSTNAME=${CFG_INVENIO_HOSTNAME:=pcuds06}
 
 # sanity check: CLI confirmation
 if [ "$1" != "--yes-i-know" ]; then
