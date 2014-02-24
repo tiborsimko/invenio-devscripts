@@ -5,7 +5,7 @@
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2011, 2012, 2013 CERN.
+# Copyright (C) 2011, 2012, 2013, 2014 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -99,11 +99,15 @@ if [ "$answer" = "y" ]; then
     mv -f $unittestresults $saveunittestresults
     mv -f $regressiontestresults $saveregressiontestresults
     mv -f $webtestresults $savewebtestresults
-    echo "[INFO] Results saved as ${saveunittestresults}, " \
-         "${saveregressiontestresults} and ${savewebtestresults}."
+    echo "[INFO] Results saved as:"
+    echo "         ${saveunittestresults}"
+    echo "         ${saveregressiontestresults}"
+    #echo "         ${savewebtestresults}"
 else
-    echo "[INFO] Left results at ${unittestresults}, " \
-         "${regressiontestresults} and ${webtestresults}."
+    echo "[INFO] Results left at:"
+    echo "         ${unittestresults}"
+    echo "         ${regressiontestresults}"
+    #echo "         ${webtestresults}."
 fi
 
 echo "[INFO] Done."
