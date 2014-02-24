@@ -99,7 +99,7 @@ if [ "$answer" = "y" ]; then
     mkdir -p $savedir
     mv -f $unittestresults $saveunittestresults
     mv -f $regressiontestresults $saveregressiontestresults
-    mv -f $webtestresults $savewebtestresults
+    #mv -f $webtestresults $savewebtestresults
     echo "[INFO] Results saved as:"
     echo "         ${saveunittestresults}"
     echo "         ${saveregressiontestresults}"
