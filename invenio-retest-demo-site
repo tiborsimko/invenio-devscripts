@@ -50,14 +50,15 @@ done
 echo
 
 # set up temporary files:
+filenameprefix=$(sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --get CFG_DATABASE_NAME)-retest-demo-site
 yyyymmddhhmmss=$(date +"%Y-%m-%d-%H-%M-%S")
-unittestresults=/tmp/$(basename $0)-unit-$yyyymmddhhmmss
-regressiontestresults=/tmp/$(basename $0)-regression-$yyyymmddhhmmss
-webtestresults=/tmp/$(basename $0)-web-$yyyymmddhhmmss
+unittestresults=/tmp/$filenameprefix-unit-$yyyymmddhhmmss
+regressiontestresults=/tmp/$filenameprefix-regression-$yyyymmddhhmmss
+webtestresults=/tmp/$filenameprefix-web-$yyyymmddhhmmss
 savedir=$HOME/.invenio-devscripts.d
-saveunittestresults=$savedir/$(basename $0)-unit-lastrun
-saveregressiontestresults=$savedir/$(basename $0)-regression-lastrun
-savewebtestresults=$savedir/$(basename $0)-web-lastrun
+saveunittestresults=$savedir/$filenameprefix-unit-lastrun
+saveregressiontestresults=$savedir/$filenameprefix-regression-lastrun
+savewebtestresults=$savedir/$filenameprefix-web-lastrun
 
 # run unit tests:
 echo "[INFO] Running unit test suite..."
