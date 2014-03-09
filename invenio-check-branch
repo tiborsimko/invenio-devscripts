@@ -9,7 +9,7 @@
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2011, 2012, 2013 CERN.
+# Copyright (C) 2011, 2012, 2013, 2014 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -59,6 +59,24 @@ if [ $nmerge -gt 0 ]; then
     echo '[ERROR] Found possible merge conflict leftovers:'
     git log $BRANCHOLD..$BRANCHNEW -p | grep -E '^\+[><=]{7}(\s|$)'
     echo '[ERROR] Exiting.'
+    exit 1
+fi
+
+# check commit log message headline length and formatting:
+problemfound=0
+while IFS=$'\n' read line; do
+    # check commit headline length:
+    if [ ${#line} -ge 92 ]; then
+        echo "[ERROR] Commit headline too long:" $line
+        problemfound=1
+    fi
+    # check commit headline formatting:
+    if [[ ! $line =~ ^[[:alnum:]]{40,40}[[:blank:]][[:alnum:]]+:[[:blank:]] ]]; then
+        echo "[ERROR] Commit headline does not start with module name:" $line
+        problemfound=1
+    fi
+done < <(git log $BRANCHOLD..$BRANCHNEW --format=oneline)
+if [ $problemfound -ne 0 ]; then
     exit 1
 fi
 
