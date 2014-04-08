@@ -164,7 +164,9 @@ sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --update-all
 # we could get into "Waiting for table metadata lock" situations due
 # to other existing DB sessions.
 sudo $CFG_INVENIO_APACHECTL stop
-sudo $CFG_INVENIO_MYSQLCTL restart
+# NOTE: the following is no longer needed as of 
+# Invenio 7f63d3c31ce93aac83c5cf927d769f33fcc6c6d1
+# sudo $CFG_INVENIO_MYSQLCTL restart
 
 # MySQL-5.5 hack: also, let's drop tables here in the shell, rather
 # than from within inveniocfg, where MySQLdb may open new sessions
