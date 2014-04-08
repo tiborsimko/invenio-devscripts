@@ -70,7 +70,8 @@ You will need to configure some of the following environment variables:
 | CFG_INVENIO_APACHECTL     | how to restart Apache?            | /etc/init.d/apache2   |
 | CFG_INVENIO_MYSQLCTL      | how to restart MySQL?             | /etc/init.d/mysql     |
 | CFG_INVENIO_VIRTUALENVS   | where is virtualenv home?         | ~/.virtualenvs        |
-| CFG_INVENIO_SYMLINK_INSTALLER  | install via symlinks?             | 0                     |
+| CFG_INVENIO_SYMLINK_INSTALLER  | install via symlinks?        | 0                     |
+| CFG_INVENIO_SITE_LANGS | what languages are enabled?          | af,ar,bg,ca,cs,de,el,en,es,fa,fr,hr,gl,ka,it,rw,lt,hu,ja,no,pl,pt,ro,ru,sk,sv,uk,zh_CN,zh_TW |
 
 Here is a minimal example of what you can put in your =$HOME/.bashrc=:
 
