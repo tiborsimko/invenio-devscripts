@@ -38,6 +38,7 @@ CFG_INVENIO_APACHECTL=${CFG_INVENIO_APACHECTL:=/etc/init.d/apache2}
 CFG_INVENIO_MYSQLCTL=${CFG_INVENIO_MYSQLCTL:=/etc/init.d/mysql}
 CFG_INVENIO_SYMLINK_INSTALLER=${CFG_INVENIO_SYMLINK_INSTALLER:=0}
 CFG_INVENIO_SITE_LANGS=${CFG_INVENIO_SITE_LANGS:=all}
+VIRTUAL_ENV=${VIRTUAL_ENV:=}
 
 # sanity check: CLI confirmation
 if [ "$1" != "--yes-i-know" ]; then
@@ -190,7 +191,7 @@ fi
 
 # update Apache configuration now: (this needs to be done after table
 # creation in the next branch)
-sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-apache-conf
+sudo -u $CFG_INVENIO_USER VIRTUAL_ENV=$VIRTUAL_ENV $CFG_INVENIO_PREFIX/bin/inveniocfg --create-apache-conf
 
 # create demo site
 sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-demo-site --yes-i-know

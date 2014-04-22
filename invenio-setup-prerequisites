@@ -45,6 +45,7 @@ fi
 CFG_INVENIO_DATABASE_NAME=${CFG_INVENIO_DATABASE_NAME:=invenio}
 CFG_INVENIO_DATABASE_USER=${CFG_INVENIO_DATABASE_USER:=invenio}
 CFG_INVENIO_DATABASE_PASS=${CFG_INVENIO_DATABASE_PASS:=my123p\$ss}
+VIRTUAL_ENV=${VIRTUAL_ENV:=}
 
 # quit on errors and potentially unbound symbols:
 set -o errexit
@@ -128,10 +129,15 @@ debian_install_packages () {
         mysql-server mysql-client gnuplot poppler-utils \
         clisp gettext libapache2-mod-wsgi unzip \
         pdftk html2text giflib-tools pstotext netpbm \
-        sbcl libapache2-mod-xsendfile openoffice.org \
+        sbcl libapache2-mod-xsendfile redis-server \
         automake libmysqlclient-dev libxml2-dev libxslt-dev \
-        make postfix texlive python-libxml2 python-libxslt1 \
-        redis-server
+        make postfix texlive python-libxml2 python-libxslt1
+    # OpenOffice.org has be removed from recent releases
+    if sudo apt-get install -y -s openoffice.org; then
+        sudo apt-get install -y openoffice.org
+    else
+        sudo apt-get install -y libreoffice
+    fi
     # restart Redis explicitly; useful for Travis-CI VMs
     sudo /usr/sbin/service redis-server restart
     # installing libhdf5-dev is OS version dependent:
@@ -140,18 +146,19 @@ debian_install_packages () {
     else
         sudo apt-get install -y libhdf5-serial-dev
     fi
-    # install distribute and pip
-    sudo apt-get remove -y python-setuptools python-pip
-    sudo apt-get install -y curl
-    curl http://python-distribute.org/distribute_setup.py | sudo python
-    sudo easy_install pip==1.3.1
-    # install Python dependencies via pip
+    sudo apt-get install -y python-pip
+    sudo pip install -U pip
     olddir=`pwd`
+    allow="--allow-all-external --allow-unverified gnuplot-py --allow-unverified h5py"
     cd $CFG_INVENIO_SRCDIR
     for reqfile in requirements.txt requirements-extras.txt \
         requirements-flask.txt requirements-flask-ext.txt; do
         if [ -e $reqfile ]; then
-            sudo pip install -r $reqfile
+            if [ "$VIRTUAL_ENV" != "" ]; then
+                pip install -r $reqfile $allow
+            else
+                sudo pip install -r $reqfile $allow
+            fi
         fi
     done
     cd $olddir
@@ -229,9 +236,9 @@ debian_configure_apache () {
         sudo DEBIAN_FRONTEND=noninteractive /usr/sbin/make-ssl-cert \
             /usr/share/ssl-cert/ssleay.cnf /etc/apache2/ssl/apache.pem
     fi
-    if [ ! -L /etc/apache2/sites-available/invenio ]; then
+    if [ ! -L /etc/apache2/sites-available/invenio.conf ]; then
         sudo ln -fs /opt/invenio/etc/apache/invenio-apache-vhost.conf \
-            /etc/apache2/sites-available/invenio
+            /etc/apache2/sites-available/invenio.conf
     fi
     if [ ! -e /opt/invenio/etc/apache/invenio-apache-vhost.conf ]; then
         # create them empty for the time being so that apache would start
@@ -239,9 +246,9 @@ debian_configure_apache () {
         sudo touch /opt/invenio/etc/apache/invenio-apache-vhost.conf
         sudo chown -R www-data.www-data /opt/invenio
     fi
-    if [ ! -L /etc/apache2/sites-available/invenio-ssl ]; then
+    if [ ! -L /etc/apache2/sites-available/invenio-ssl.conf ]; then
         sudo ln -fs /opt/invenio/etc/apache/invenio-apache-vhost-ssl.conf \
-            /etc/apache2/sites-available/invenio-ssl
+            /etc/apache2/sites-available/invenio-ssl.conf
     fi
     if [ ! -e /opt/invenio/etc/apache/invenio-apache-vhost-ssl.conf ]; then
         # create them empty for the time being so that apache would start
@@ -249,10 +256,10 @@ debian_configure_apache () {
         sudo touch /opt/invenio/etc/apache/invenio-apache-vhost-ssl.conf
         sudo chown -R www-data.www-data /opt/invenio
     fi
-    sudo /usr/sbin/a2dissite default
-    sudo /usr/sbin/a2ensite invenio
-    sudo /usr/sbin/a2ensite invenio-ssl
+    sudo /usr/sbin/a2dissite "*default*"
+    sudo /usr/sbin/a2ensite "invenio*"
     sudo /usr/sbin/a2enmod ssl
+    sudo /usr/sbin/a2enmod version || echo "[WARNING] Ignoring 'a2enmod version' command; hoping IfVersion is built-in."
     sudo /usr/sbin/a2enmod xsendfile
     sudo /etc/init.d/apache2 restart
 }
