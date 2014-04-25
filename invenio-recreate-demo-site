@@ -37,8 +37,7 @@ CFG_INVENIO_DATABASE_PASS=${CFG_INVENIO_DATABASE_PASS:=my123p\$ss}
 CFG_INVENIO_APACHECTL=${CFG_INVENIO_APACHECTL:=/etc/init.d/apache2}
 CFG_INVENIO_MYSQLCTL=${CFG_INVENIO_MYSQLCTL:=/etc/init.d/mysql}
 CFG_INVENIO_SYMLINK_INSTALLER=${CFG_INVENIO_SYMLINK_INSTALLER:=0}
-CFG_INVENIO_SITE_LANGS=${CFG_INVENIO_SITE_LANGS:=af,ar,bg,ca,cs,de,el,en,es,fa,fr,hr,gl,ka,it,rw,lt,hu,ja,no,pl,pt,ro,ru,sk,sv,uk,zh_CN,zh_TW}
-
+CFG_INVENIO_SITE_LANGS=${CFG_INVENIO_SITE_LANGS:=all}
 
 # sanity check: CLI confirmation
 if [ "$1" != "--yes-i-know" ]; then
@@ -139,9 +138,14 @@ CFG_WEBCOMMENT_ALERT_ENGINE_EMAIL = ${CFG_INVENIO_ADMIN}
 CFG_WEBCOMMENT_DEFAULT_MODERATOR = ${CFG_INVENIO_ADMIN}
 CFG_BIBAUTHORID_AUTHOR_TICKET_ADMIN_EMAIL = ${CFG_INVENIO_ADMIN}
 CFG_BIBCATALOG_SYSTEM_EMAIL_ADDRESS = ${CFG_INVENIO_ADMIN}
-CFG_BIBSCHED_PROCESS_USER = ${CFG_INVENIO_USER}
-CFG_SITE_LANGS = ${CFG_INVENIO_SITE_LANGS}" | \
+CFG_BIBSCHED_PROCESS_USER = ${CFG_INVENIO_USER}" | \
     sudo -u $CFG_INVENIO_USER tee $CFG_INVENIO_PREFIX/etc/invenio-local.conf
+
+# if applicable, append language option:
+if [ "$CFG_INVENIO_SITE_LANGS" != "all" ]; then
+    echo "CFG_SITE_LANGS = ${CFG_INVENIO_SITE_LANGS}" | \
+    sudo -u $CFG_INVENIO_USER tee -a $CFG_INVENIO_PREFIX/etc/invenio-local.conf
+fi
 
 # if applicable, create secret key:
 if grep -q create-secret-key INSTALL; then
@@ -167,7 +171,7 @@ sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --update-all
 # we could get into "Waiting for table metadata lock" situations due
 # to other existing DB sessions.
 sudo $CFG_INVENIO_APACHECTL stop
-# NOTE: the following is no longer needed as of 
+# NOTE: the following is no longer needed as of
 # Invenio 7f63d3c31ce93aac83c5cf927d769f33fcc6c6d1
 # sudo $CFG_INVENIO_MYSQLCTL restart
 

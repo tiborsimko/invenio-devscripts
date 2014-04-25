@@ -55,23 +55,23 @@ then in your =$HOME/.bashrc= you can say:
 
 You will need to configure some of the following environment variables:
 
-| Variable                  | Documentation                     | Default value         |
-| CFG_INVENIO_SRCDIR        | where are Invenio sources?        | ~/private/src/invenio |
-| CFG_INVENIO_PREFIX        | where is Invenio installed?       | /opt/invenio          |
-| CFG_INVENIO_HOSTNAME      | what is allowed hostname?         | pcuds06               |
-| CFG_INVENIO_DOMAINNAME    | what is our domain name?          | cern.ch               |
-| CFG_INVENIO_PORT_HTTP     | what is our HTTP port number?     | 80                    |
-| CFG_INVENIO_PORT_HTTPS    | what is our HTTPS port number?    | 443                   |
-| CFG_INVENIO_USER          | under which user ID Invenio runs? | www-data              |
-| CFG_INVENIO_ADMIN         | who is admin of this instance?    | tibor.simko@cern.ch   |
-| CFG_INVENIO_DATABASE_NAME | what is database name?            | invenio               |
-| CFG_INVENIO_DATABASE_USER | what is database user?            | invenio               |
-| CFG_INVENIO_DATABASE_PASS | what is database user password?   | my123p$ss             |
-| CFG_INVENIO_APACHECTL     | how to restart Apache?            | /etc/init.d/apache2   |
-| CFG_INVENIO_MYSQLCTL      | how to restart MySQL?             | /etc/init.d/mysql     |
-| CFG_INVENIO_VIRTUALENVS   | where is virtualenv home?         | ~/.virtualenvs        |
-| CFG_INVENIO_SYMLINK_INSTALLER  | install via symlinks?        | 0                     |
-| CFG_INVENIO_SITE_LANGS | what languages are enabled?          | af,ar,bg,ca,cs,de,el,en,es,fa,fr,hr,gl,ka,it,rw,lt,hu,ja,no,pl,pt,ro,ru,sk,sv,uk,zh_CN,zh_TW |
+| Variable                      | Documentation                     | Default value                                   |
+| CFG_INVENIO_SRCDIR            | where are Invenio sources?        | ~/private/src/invenio                           |
+| CFG_INVENIO_PREFIX            | where is Invenio installed?       | /opt/invenio                                    |
+| CFG_INVENIO_HOSTNAME          | what is allowed hostname?         | pcuds06                                         |
+| CFG_INVENIO_DOMAINNAME        | what is our domain name?          | cern.ch                                         |
+| CFG_INVENIO_PORT_HTTP         | what is our HTTP port number?     | 80                                              |
+| CFG_INVENIO_PORT_HTTPS        | what is our HTTPS port number?    | 443                                             |
+| CFG_INVENIO_USER              | under which user ID Invenio runs? | www-data                                        |
+| CFG_INVENIO_ADMIN             | who is admin of this instance?    | tibor.simko@cern.ch                             |
+| CFG_INVENIO_DATABASE_NAME     | what is database name?            | invenio                                         |
+| CFG_INVENIO_DATABASE_USER     | what is database user?            | invenio                                         |
+| CFG_INVENIO_DATABASE_PASS     | what is database user password?   | my123p$ss                                       |
+| CFG_INVENIO_APACHECTL         | how to restart Apache?            | /etc/init.d/apache2                             |
+| CFG_INVENIO_MYSQLCTL          | how to restart MySQL?             | /etc/init.d/mysql                               |
+| CFG_INVENIO_VIRTUALENVS       | where is virtualenv home?         | ~/.virtualenvs                                  |
+| CFG_INVENIO_SYMLINK_INSTALLER | install via symlinks?             | 0                                               |
+| CFG_INVENIO_SITE_LANGS        | which UI languages to enable?     | all; e.g. use "en,fr,it,de" to enable only some |
 
 Here is a minimal example of what you can put in your =$HOME/.bashrc=:
 
