@@ -157,6 +157,42 @@ debian_install_packages () {
     cd $olddir
 }
 
+ubuntu1404_install_packages () {
+    # install system packages
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        git python-dev apache2-mpm-worker \
+        mysql-server mysql-client gnuplot poppler-utils \
+        clisp gettext libapache2-mod-wsgi unzip \
+        pdftk html2text giflib-tools pstotext netpbm \
+        sbcl libapache2-mod-xsendfile \
+        automake libmysqlclient-dev libxml2-dev libxslt-dev \
+        make postfix texlive python-libxml2 python-libxslt1 \
+        redis-server
+    # restart Redis explicitly; useful for Travis-CI VMs
+    sudo /usr/sbin/service redis-server restart
+    # installing libhdf5-dev is OS version dependent:
+    if sudo apt-get install -y -s libhdf5-dev; then
+        sudo apt-get install -y libhdf5-dev
+    else
+        sudo apt-get install -y libhdf5-serial-dev
+    fi
+    # install distribute and pip
+    sudo apt-get remove -y python-setuptools python-pip
+    sudo apt-get install -y curl
+    curl http://python-distribute.org/distribute_setup.py | sudo python
+    sudo easy_install pip==1.3.1
+    # install Python dependencies via pip
+    olddir=`pwd`
+    cd $CFG_INVENIO_SRCDIR
+    for reqfile in requirements.txt requirements-extras.txt \
+        requirements-flask.txt requirements-flask-ext.txt; do
+        if [ -e $reqfile ]; then
+            sudo pip install -r $reqfile
+        fi
+    done
+    cd $olddir
+}
+
 freebsd_install_packages () {
     # install system packages
     sudo BATCH=yes pkg_add -rF git python w3m wget mysql55-server \
@@ -192,6 +228,10 @@ debian_configure_mysql () {
     echo "DROP DATABASE IF EXISTS $CFG_INVENIO_DATABASE_NAME;" | mysql -u root -B
     echo "CREATE DATABASE $CFG_INVENIO_DATABASE_NAME DEFAULT CHARACTER SET utf8;" | mysql -u root -B
     echo "GRANT ALL PRIVILEGES ON $CFG_INVENIO_DATABASE_NAME.* TO $CFG_INVENIO_DATABASE_USER@localhost IDENTIFIED BY '$CFG_INVENIO_DATABASE_PASS'" | mysql -u root -B
+}
+
+ubuntu1404_configure_mysql () {
+    debian_configure_mysql
 }
 
 freebsd_configure_mysql () {
@@ -250,6 +290,42 @@ debian_configure_apache () {
         sudo chown -R www-data.www-data /opt/invenio
     fi
     sudo /usr/sbin/a2dissite default
+    sudo /usr/sbin/a2ensite invenio
+    sudo /usr/sbin/a2ensite invenio-ssl
+    sudo /usr/sbin/a2enmod ssl
+    sudo /usr/sbin/a2enmod xsendfile
+    sudo /etc/init.d/apache2 restart
+}
+
+ubuntu1404_configure_apache () {
+    sudo DEBIAN_FRONTEND=noninteractive apt-get install -y ssl-cert
+    sudo mkdir -p /etc/apache2/ssl
+    if [ ! -e /etc/apache2/ssl/apache.pem ]; then
+        sudo DEBIAN_FRONTEND=noninteractive /usr/sbin/make-ssl-cert \
+            /usr/share/ssl-cert/ssleay.cnf /etc/apache2/ssl/apache.pem
+    fi
+    if [ ! -L /etc/apache2/sites-available/invenio ]; then
+        sudo ln -fs /opt/invenio/etc/apache/invenio-apache-vhost.conf \
+            /etc/apache2/sites-available/invenio.conf
+    fi
+    if [ ! -e /opt/invenio/etc/apache/invenio-apache-vhost.conf ]; then
+        # create them empty for the time being so that apache would start
+        sudo mkdir -p /opt/invenio/etc/apache/
+        sudo touch /opt/invenio/etc/apache/invenio-apache-vhost.conf
+        sudo chown -R www-data.www-data /opt/invenio
+    fi
+    if [ ! -L /etc/apache2/sites-available/invenio-ssl ]; then
+        sudo ln -fs /opt/invenio/etc/apache/invenio-apache-vhost-ssl.conf \
+            /etc/apache2/sites-available/invenio-ssl.conf
+    fi
+    if [ ! -e /opt/invenio/etc/apache/invenio-apache-vhost-ssl.conf ]; then
+        # create them empty for the time being so that apache would start
+        sudo mkdir -p /opt/invenio/etc/apache/
+        sudo touch /opt/invenio/etc/apache/invenio-apache-vhost-ssl.conf
+        sudo chown -R www-data.www-data /opt/invenio
+    fi
+
+    sudo /usr/sbin/a2dissite 000-default
     sudo /usr/sbin/a2ensite invenio
     sudo /usr/sbin/a2ensite invenio-ssl
     sudo /usr/sbin/a2enmod ssl
@@ -333,9 +409,15 @@ main () {
         redhat_configure_selinux
         redhat_configure_iptables
     elif [ -e /etc/debian_version ]; then
-        debian_install_packages
-        debian_configure_mysql
-        debian_configure_apache
+        if [ -e /etc/os-release ] && grep -q "Ubuntu 14.04 " /etc/os-release; then
+            ubuntu1404_install_packages
+            ubuntu1404_configure_mysql
+            ubuntu1404_configure_apache
+        else
+            debian_install_packages
+            debian_configure_mysql
+            debian_configure_apache
+        fi
     elif [ $(uname -s) = "FreeBSD" ]; then
         freebsd_install_packages
         freebsd_configure_mysql
