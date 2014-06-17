@@ -83,7 +83,8 @@ else
 fi
 
 # set up env/opt/home development environment:
-${CFG_INVENIO_SRCDIR}-devscripts/invenio-setup-environment --yes-i-know
+DEVSCRIPT_DIR=$(dirname ${CFG_INVENIO_SRCDIR})/invenio-devscripts
+${DEVSCRIPT_DIR}/invenio-setup-environment --yes-i-know
 
 # Now we have to reread CFG_INVENIO_* variables set up in the previous
 # step.  Let's use eval here, since e.g. on Ubuntu vagrant box,
@@ -93,9 +94,9 @@ eval $(grep "export CFG_INVENIO" $HOME/.bashrc)
 eval $(grep "export PATH=" $HOME/.bashrc)
 
 # install Apache/MySQL/Python/etc prerequisites:
-${CFG_INVENIO_SRCDIR}-devscripts/invenio-setup-prerequisites --yes-i-know
+${DEVSCRIPT_DIR}/invenio-setup-prerequisites --yes-i-know
 
 # install Invenio demo site instance:
-${CFG_INVENIO_SRCDIR}-devscripts/invenio-recreate-demo-site --yes-i-know
+${DEVSCRIPT_DIR}/invenio-recreate-demo-site --yes-i-know
 
 # end of file
