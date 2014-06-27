@@ -128,10 +128,15 @@ debian_install_packages () {
         mysql-server mysql-client gnuplot poppler-utils \
         clisp gettext libapache2-mod-wsgi unzip \
         pdftk html2text giflib-tools pstotext netpbm \
-        sbcl libapache2-mod-xsendfile openoffice.org \
+        sbcl libapache2-mod-xsendfile redis-server \
         automake libmysqlclient-dev libxml2-dev libxslt-dev \
-        make postfix texlive python-libxml2 python-libxslt1 \
-        redis-server
+        make postfix texlive python-libxml2 python-libxslt1
+    # OpenOffice.org has be removed from recent releases
+    if sudo apt-get install -y -s openoffice.org; then
+        sudo apt-get install -y openoffice.org
+    else
+        sudo apt-get install -y libreoffice
+    fi
     # restart Redis explicitly; useful for Travis-CI VMs
     sudo /usr/sbin/service redis-server restart
     # installing libhdf5-dev is OS version dependent:
@@ -231,7 +236,7 @@ debian_configure_apache () {
     fi
     if [ ! -L /etc/apache2/sites-available/invenio ]; then
         sudo ln -fs /opt/invenio/etc/apache/invenio-apache-vhost.conf \
-            /etc/apache2/sites-available/invenio
+            /etc/apache2/sites-available/invenio.conf
     fi
     if [ ! -e /opt/invenio/etc/apache/invenio-apache-vhost.conf ]; then
         # create them empty for the time being so that apache would start
@@ -241,7 +246,7 @@ debian_configure_apache () {
     fi
     if [ ! -L /etc/apache2/sites-available/invenio-ssl ]; then
         sudo ln -fs /opt/invenio/etc/apache/invenio-apache-vhost-ssl.conf \
-            /etc/apache2/sites-available/invenio-ssl
+            /etc/apache2/sites-available/invenio-ssl.conf
     fi
     if [ ! -e /opt/invenio/etc/apache/invenio-apache-vhost-ssl.conf ]; then
         # create them empty for the time being so that apache would start
@@ -249,7 +254,7 @@ debian_configure_apache () {
         sudo touch /opt/invenio/etc/apache/invenio-apache-vhost-ssl.conf
         sudo chown -R www-data.www-data /opt/invenio
     fi
-    sudo /usr/sbin/a2dissite default
+    sudo /usr/sbin/a2dissite *default*
     sudo /usr/sbin/a2ensite invenio
     sudo /usr/sbin/a2ensite invenio-ssl
     sudo /usr/sbin/a2enmod ssl
