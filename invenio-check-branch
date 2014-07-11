@@ -75,6 +75,10 @@ while IFS=$'\n' read line; do
         echo "[ERROR] Commit headline does not start with module name:" $line
         problemfound=1
     fi
+    if [[ $line =~ \.$ ]]; then
+        echo "[ERROR] Commit headline ends with dot:" $line
+        problemfound=1
+    fi
 done < <(git log $BRANCHOLD..$BRANCHNEW --format=oneline)
 if [ $problemfound -ne 0 ]; then
     exit 1
