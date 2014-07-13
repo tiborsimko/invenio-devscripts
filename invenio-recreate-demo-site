@@ -190,7 +190,7 @@ fi
 
 # update Apache configuration now: (this needs to be done after table
 # creation in the next branch)
-sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-apache-conf
+sudo -u $CFG_INVENIO_USER VIRTUAL_ENV=$VIRTUAL_ENV $CFG_INVENIO_PREFIX/bin/inveniocfg --create-apache-conf
 
 # create demo site
 sudo -u $CFG_INVENIO_USER $CFG_INVENIO_PREFIX/bin/inveniocfg --create-demo-site --yes-i-know
