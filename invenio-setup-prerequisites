@@ -116,7 +116,13 @@ redhat6_install_packages () {
     for reqfile in requirements.txt requirements-extras.txt \
         requirements-flask.txt requirements-flask-ext.txt; do
         if [ -e $reqfile ]; then
+            if [ "$reqfile" = "requirements-extras.txt" ]; then
+                set +o errexit # let us continue if extra requirements (e.g. ipython) cannot be installed
+            fi
             sudo pip install -r $reqfile
+            if [ "$reqfile" = "requirements-extras.txt" ]; then
+                set -o errexit
+            fi
         fi
     done
     cd $olddir
@@ -154,10 +160,16 @@ debian_install_packages () {
     for reqfile in requirements.txt requirements-extras.txt \
         requirements-flask.txt requirements-flask-ext.txt; do
         if [ -e $reqfile ]; then
+            if [ "$reqfile" = "requirements-extras.txt" ]; then
+                set +o errexit # let us continue if extra requirements (e.g. ipython) cannot be installed
+            fi
             if [ "$VIRTUAL_ENV" != "" ]; then
                 pip install -r $reqfile $allow
             else
                 sudo pip install -r $reqfile $allow
+            fi
+            if [ "$reqfile" = "requirements-extras.txt" ]; then
+                set -o errexit
             fi
         fi
     done
@@ -178,7 +190,13 @@ freebsd_install_packages () {
     for reqfile in requirements.txt requirements-extras.txt \
         requirements-flask.txt requirements-flask-ext.txt; do
         if [ -e $reqfile ]; then
+            if [ "$reqfile" = "requirements-extras.txt" ]; then
+                set +o errexit # let us continue if extra requirements (e.g. ipython) cannot be installed
+            fi
             sudo pip install -r $reqfile
+            if [ "$reqfile" = "requirements-extras.txt" ]; then
+                set -o errexit
+            fi
         fi
     done
     cd $olddir
