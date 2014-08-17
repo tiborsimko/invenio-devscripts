@@ -1,0 +1,208 @@
+#!/usr/bin/env bash
+#
+# >>> About
+#
+# This helper devscript installs Invenio 2.0 development environment
+# on a fresh (virtual) machine in a fully automated, unassisted way.
+# Tested only on ubuntu/trusty64.  For more information, see "Usage"
+# section below and also
+# <https://github.com/tiborsimko/invenio-devscripts>.
+#
+# >>> Copyright
+#
+# Tibor Simko <tibor.simko@cern.ch>
+#
+# Copyright (C) 2014 CERN.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/>.
+#
+# >>> Usage
+#
+# First, start a new VM like this:
+#
+#   laptop> mkdir -p ~/private/vm/invenio2trusty64
+#   laptop> cd ~/private/vm/invenio2trusty64
+#   laptop> vim .Vagrantfile # enter following content:
+#   Vagrant.configure("2") do |config|
+#     config.vm.box = "trusty64"
+#     config.vm.box_url = "http://cloud-images.ubuntu.com/vagrant/trusty/20140813/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+#     config.vm.hostname = 'localhost.localdomain'
+#     config.vm.network :forwarded_port, host: 8080, guest: 8080
+#     config.vm.network :forwarded_port, host: 8443, guest: 8443
+#     config.vm.provider :virtualbox do |vb|
+#       vb.customize ["modifyvm", :id, "--memory", "1024"]
+#     end
+#   end
+#   laptop> vagrant up
+#
+# Second, connect to VM and launch kickstarter:
+#
+#   laptop> vagrant ssh
+#   vm> wget https://raw.githubusercontent.com/tiborsimko/invenio-devscripts/master/invenio2-kickstart
+#   vm> chmod u+x ./invenio2-kickstart
+#   vm> ./invenio2-kickstart --yes-i-know --yes-i-really-know
+#
+# Third, go brew some tee, come back in twenty minutes, enjoy!
+#
+#   laptop> firefox http://0.0.0.0:8080/
+#
+# >>> Configuration
+#
+# It is not necessary to set any particular configuration; the default
+# values (displayed below) should suit typical use case.  If you want
+# to change some variable, just set it before launching this script,
+# for example:
+#
+#   CFG_INVENIO2_FOO=foo1 CFG_INVENIO2_BAR=bar3 ./invenio-kickstart
+#
+# Howgh!
+
+# configuration:
+CFG_INVENIO2_REPOSITORY_GENERAL=${CFG_INVENIO2_REPOSITORY_GENERAL:=git://github.com/inveniosoftware/invenio}
+CFG_INVENIO2_REPOSITORY_OVERLAY=${CFG_INVENIO2_REPOSITORY_OVERLAY:=git://github.com/inveniosoftware/invenio-demosite}
+CFG_INVENIO2_REPOSITORY_BRANCH=${CFG_INVENIO2_REPOSITORY_BRANCH:=pu}
+CFG_INVENIO2_SITE_URL=${CFG_INVENIO2_SITE_URL:=http://0.0.0.0:8080}
+CFG_INVENIO2_SITE_SECURE_URL=${CFG_INVENIO2_SITE_SECURE_URL:=http://0.0.0.0:8080}
+CFG_INVENIO2_VIRTUAL_ENV=${CFG_INVENIO2_VIRTUAL_ENV:=invenio2}
+CFG_INVENIO2_DATABASE_USER=${CFG_INVENIO2_DATABASE_USER:=invenio2}
+CFG_INVENIO2_DATABASE_NAME=${CFG_INVENIO2_DATABASE_NAME:=invenio2}
+
+# sanity check: CLI confirmation
+if [[ "$@" != *"--yes-i-know"* ]]; then
+    echo "[ERROR] You did not use --yes-i-know.  Not going to kickstart Invenio on this machine."
+    exit 1
+fi
+if [[ "$@" != *"--yes-i-really-know"* ]]; then
+    echo "[ERROR] You did not use --yes-i-really-know.  Not going to kickstart Invenio on this machine."
+    exit 1
+fi
+
+# quit on errors and potentially unbound symbols:
+## (unfortunately cannot use due to virtualenvwrapper)
+## set -o errexit
+## set -o nounset
+
+ubuntu_trusty () {
+
+    # install initial batch of prerequisites:
+    sudo DEBIAN_FRONTEND=noninteractive apt-get -y update
+    sudo DEBIAN_FRONTEND=noninteractive apt-get -y install git vim screen
+    sudo DEBIAN_FRONTEND=noninteractive apt-get -y install \
+        build-essential git redis-server \
+        libmysqlclient-dev libxml2-dev libxslt-dev \
+        libjpeg-dev libfreetype6-dev libtiff-dev \
+        software-properties-common python-dev \
+        virtualenvwrapper subversion
+    sudo pip install -U virtualenvwrapper pip
+    source $(which virtualenvwrapper.sh)
+
+    # install MySQL:
+    sudo DEBIAN_FRONTEND=noninteractive apt-get -y install mysql-server
+
+    # install nodejs:
+    sudo apt-get -y install python-software-properties
+    sudo add-apt-repository -y ppa:chris-lea/node.js
+    sudo apt-get -y update
+    sudo apt-get -y install nodejs
+
+    # install bower globally:
+    sudo su -c "npm install -g bower"
+}
+
+invenio () {
+
+    # create virtual environment:
+    mkvirtualenv $CFG_INVENIO2_VIRTUAL_ENV
+    cdvirtualenv
+
+    # clone there Invenio and its demo site overlay:
+    mkdir src
+    cd src
+    git clone -b $CFG_INVENIO2_REPOSITORY_BRANCH $CFG_INVENIO2_REPOSITORY_GENERAL
+    git clone -b $CFG_INVENIO2_REPOSITORY_BRANCH $CFG_INVENIO2_REPOSITORY_OVERLAY
+
+    # install ipython
+    pip install ipython
+
+    # install Invenio requirements:
+    cdvirtualenv src/invenio
+    pip install -r requirements.txt
+
+    # compile I18N PO catalogue:
+    python setup.py compile_catalog
+
+    # install Invenio demo site overlay:
+    cdvirtualenv src/invenio-demosite
+    pip install -r requirements.txt --exists-action i
+
+    # install JS/CSS assets using bower:
+    inveniomanage bower -i bower-base.json > bower.json
+    CI=true bower install
+
+    # create secrety key for your installation:
+    inveniomanage config create secret-key
+
+    # set configuration varialbes suitable for local (VM) developments:
+    inveniomanage config set CFG_EMAIL_BACKEND flask.ext.email.backends.console.Mail
+    inveniomanage config set CFG_BIBSCHED_PROCESS_USER $USER
+    inveniomanage config set CFG_DATABASE_NAME $CFG_INVENIO2_DATABASE_NAME
+    inveniomanage config set CFG_DATABASE_USER $CFG_INVENIO2_DATABASE_USER
+    inveniomanage config set CFG_SITE_URL $CFG_INVENIO2_SITE_URL
+    inveniomanage config set CFG_SITE_SECURE_URL $CFG_INVENIO2_SITE_SECURE_URL
+
+    # install JS/CSS asset filters:
+    sudo su -c "npm install -g less clean-css requirejs uglify-js"
+
+    # collect JS/CSS assets into your instance directory:
+    inveniomanage config set COLLECT_STORAGE invenio.ext.collect.storage.link
+    inveniomanage collect
+
+    # create database:
+    inveniomanage database init --user=root --yes-i-know
+    inveniomanage database create
+
+    # install honcho to run development celery/redis/web servers:
+    cdvirtualenv src/invenio
+    pip install honcho flower
+    honcho start &
+
+    # populate your site with demo records: demo
+    inveniomanage demosite populate --packages=invenio_demosite.base
+
+    # FIXME: this is needed to run manually
+    # bibindex -u admin -R
+    # bibindex -u admin -w global -R
+}
+
+main () {
+    os_distribution=$(lsb_release -i | cut -f 2)
+    os_release=$(lsb_release -r | cut -f 2)
+    if [ "$os_distribution" = "Ubuntu" ]; then
+        if [ "$os_release" = "14.04" ]; then
+            ubuntu_trusty
+            invenio
+        else
+            echo "[ERROR] Sorry, unsupported release" $os_release "."
+            echo "[ERROR] Please contact authors.  Exiting."
+        fi
+    else
+        echo "[ERROR] Sorry, unsupported distribution" $os_distribution "."
+        echo "[ERROR] Please contact authors.  Exiting."
+        exit 1;
+    fi
+}
+
+main
+
+# end of file

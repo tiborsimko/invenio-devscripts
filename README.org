@@ -1,7 +1,7 @@
 #+TITLE: Invenio Devscripts
 #+AUTHOR: Tibor Simko
 #+EMAIL: tibor.simko@cern.ch
-#+DATE: <2012-11-05 Mon>
+#+DATE: <2014-08-17 Sun>
 #+DESCRIPTION: A collection of scripts useful for Invenio development.
 #+KEYWORDS: invenio, development, scripts
 #+LANGUAGE: en
@@ -11,7 +11,64 @@
 =invenio-devscripts= repository contains a collection of scripts
 useful when hacking on [[http://invenio-software.org/][Invenio]].
 
-* Contents
+* Invenio 2 Development Environment
+
+The following devscripts are suitable for Invenio 2.x based
+development environments.
+
+** invenio2-kickstart
+
+Permits to bootstrap a fresh Invenio 2 development environment on a
+newly installed OS, say a Vagrant VM box.  Use with care!  Usually
+used only once.
+
+Firstly, start a new, fresh, empty OS, such as Ubuntu/Trusty64 Vagrant
+virtual machine:
+
+#+BEGIN_EXAMPLE
+laptop> mkdir -p ~/private/vm/invenio2trusty64
+laptop> cd ~/private/vm/invenio2trusty64
+laptop> vim .Vagrantfile # enter following content:
+Vagrant.configure("2") do |config|
+  config.vm.box = "trusty64"
+  config.vm.box_url = "http://cloud-images.ubuntu.com/vagrant/trusty/20140813/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+  config.vm.hostname = 'localhost.localdomain'
+  config.vm.network :forwarded_port, host: 8080, guest: 8080
+  config.vm.network :forwarded_port, host: 8443, guest: 8443
+  config.vm.provider :virtualbox do |vb|
+    vb.customize ["modifyvm", :id, "--memory", "1024"]
+  end
+end
+laptop> vagrant up
+#+END_EXAMPLE
+
+Secondly, connect to the new VM and launch Invenio kickstarter:
+
+#+BEGIN_EXAMPLE
+laptop> vagrant ssh
+vm> wget https://raw.githubusercontent.com/tiborsimko/invenio-devscripts/master/invenio2-kickstart
+vm> chmod u+x ./invenio2-kickstart
+vm> ./invenio2-kickstart --yes-i-know --yes-i-really-know
+#+END_EXAMPLE
+
+Thirdly, go brew some tee, come back in twenty minutes, enjoy!
+
+#+BEGIN_EXAMPLE
+laptop> firefox http://0.0.0.0:8080/
+#+END_EXAMPLE
+
+You now have Invenio 2 and its demo site installed, using some
+default parameters suitable for Invenio developments.  If you would
+like to change some of these parameters, you can set some environment
+variables before launching the kickstarter script; please see the
+beginning of =invenio2-kickstart= script for advice.
+
+* Invenio 1 Development Environment
+
+The following devscripts are suitable mostly for Invenio 1.x based
+development environments.
+
+** Overview
 
 - invenio-kickstart :: kick-start Invenio developments on a new OS (use with care!)
 - invenio-setup-environment :: kick-start Invenio development environment (bashrc,/opt)
@@ -37,9 +94,9 @@ useful when hacking on [[http://invenio-software.org/][Invenio]].
 - invenio-symlink-installer :: GNU install drop-in replacement that
      could be used to symlink files instead of copying them.
 
-* Installation
+** Installation
 
-** Clone devscript repository
+*** Clone devscript repository
 
 Put the scripts somewhere under your =PATH=.  For example, if you
 clone this repository under =$HOME/private/src=:
@@ -51,7 +108,7 @@ then in your =$HOME/.bashrc= you can say:
 
 : export PATH=$HOME/private/src/invenio-devscripts:$PATH
 
-** Configure devscript variables
+*** Configure devscript variables
 
 You will need to configure some of the following environment variables:
 
@@ -88,7 +145,7 @@ devscripts "on the spot", for example:
 
 : CFG_INVENIO_HOSTNAME=newbox CFG_INVENIO_USER=apache invenio-retest-demo-site --yes-i-know
 
-** Install Invenio
+*** Install Invenio
 
 If you have a newly installed OS where you would like to bootstrap
 Invenio development environment in a fully automated, unassisted
@@ -106,7 +163,7 @@ If you have never installed Invenio before, you may want to do it
 manually the first time, as a learning exercise.  Please follow pages
 such as [[http://invenio-software.org/wiki/Installation/InvenioOnDebian][Invenio on Debian]].
 
-** Set up sudo rights
+*** Set up sudo rights
 
 Some devscripts, especially ones that recreate Invenio demo site for
 you, further assume that you have certain =sudo= rights to execute
@@ -123,7 +180,7 @@ johndoe ALL=(www-data) NOPASSWD: ALL, \
             (root) NOPASSWD: /etc/init.d/mysql
 #+END_EXAMPLE
 
-* Usage
+* Invenio 1 Devscripts
 
 ** invenio-kickstart
 
