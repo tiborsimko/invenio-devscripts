@@ -28,7 +28,7 @@ virtual machine:
 #+BEGIN_EXAMPLE
 laptop> mkdir -p ~/private/vm/invenio2trusty64
 laptop> cd ~/private/vm/invenio2trusty64
-laptop> vim .Vagrantfile # enter following content:
+laptop> vim Vagrantfile # enter following content:
 Vagrant.configure("2") do |config|
   config.vm.box = "trusty64"
   config.vm.box_url = "http://cloud-images.ubuntu.com/vagrant/trusty/20140813/trusty-server-cloudimg-amd64-vagrant-disk1.box"
