@@ -150,10 +150,10 @@ invenio () {
     inveniomanage bower -i bower-base.json > bower.json
     CI=true bower install
 
-    # create secrety key for your installation:
+    # create secret key for your installation:
     inveniomanage config create secret-key
 
-    # set configuration varialbes suitable for local (VM) developments:
+    # set configuration variables suitable for local (VM) developments:
     inveniomanage config set CFG_EMAIL_BACKEND flask.ext.email.backends.console.Mail
     inveniomanage config set CFG_BIBSCHED_PROCESS_USER $USER
     inveniomanage config set CFG_DATABASE_NAME $CFG_INVENIO2_DATABASE_NAME
@@ -180,9 +180,6 @@ invenio () {
     # populate your site with demo records: demo
     inveniomanage demosite populate --packages=invenio_demosite.base
 
-    # FIXME: this is needed to run manually
-    # bibindex -u admin -R
-    # bibindex -u admin -w global -R
 }
 
 main () {
