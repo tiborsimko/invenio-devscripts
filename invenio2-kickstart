@@ -143,7 +143,8 @@ invenio () {
     python setup.py compile_catalog
 
     # install Invenio demo site overlay:
-    cdvirtualenv src/invenio-demosite
+    cdvirtualenv src/$(basename ${CFG_INVENIO2_REPOSITORY_OVERLAY})
+    overlaypackage=$(dirname $(ls */config.py))
     pip install -r requirements.txt --exists-action i
 
     # install JS/CSS assets using bower:
@@ -178,7 +179,7 @@ invenio () {
     honcho start &
 
     # populate your site with demo records: demo
-    inveniomanage demosite populate --packages=invenio_demosite.base
+    inveniomanage demosite populate --packages=${overlaypackage}.base
 
 }
 
