@@ -4,8 +4,11 @@
 #
 # This helper devscript installs Invenio 2.0 development environment
 # on a fresh (virtual) machine in a fully automated, unassisted way.
-# Tested only on ubuntu/trusty64.  For more information, see "Usage"
-# section below and also
+#
+# Tested on: CentOS 6 x86_64
+#            Ubuntu 14.04 LTS (Trusty Tahr) amd64
+#
+# For more information, see "Usage" section below as well as
 # <https://github.com/tiborsimko/invenio-devscripts>.
 #
 # >>> Copyright
@@ -59,10 +62,10 @@
 #
 # >>> Configuration
 #
-# It is not necessary to set any particular configuration; the default
-# values (displayed below) should suit typical use case.  If you want
-# to change some variable, just set it before launching this script,
-# for example:
+# It is not necessary to set any particular configuration parameters;
+# the default values (displayed below) should suit typical use case.
+# If you want to change some variables, just set them before launching
+# this script, for example:
 #
 #   CFG_INVENIO2_FOO=foo1 CFG_INVENIO2_BAR=bar3 ./invenio-kickstart
 #
@@ -93,7 +96,32 @@ fi
 ## set -o errexit
 ## set -o nounset
 
-ubuntu_trusty () {
+configure_iptables () {
+
+    # open HTTP and HTTPS ports in the firewall:
+    if [ -e /sbin/iptables ]; then
+        thisinputchain="INPUT"
+        if sudo /sbin/iptables -nL | grep -q 'Chain RH-Firewall-1-INPUT'; then
+            thisinputchain="RH-Firewall-1-INPUT"
+        fi
+        httpport=$(echo ${CFG_INVENIO2_SITE_URL} | cut -d: -f 3)
+        httpsport=$(echo ${CFG_INVENIO2_SITE_SECURE_URL} | cut -d: -f 3)
+        if [ -n $httpport ]; then
+            if ! sudo /sbin/iptables -nL | grep -q dpt:$httpport; then
+                sudo /sbin/iptables -I $thisinputchain -p tcp -m tcp --dport $httpport -j ACCEPT
+                sudo /sbin/iptables -I OUTPUT -p tcp -m tcp --dport $httpport -j ACCEPT
+            fi
+        fi
+        if [ -n $httpsport ]; then
+            if ! sudo /sbin/iptables -nL | grep -q dpt:$httpsport; then
+                sudo /sbin/iptables -I $thisinputchain -p tcp -m tcp --dport $httpsport -j ACCEPT
+                sudo /sbin/iptables -I OUTPUT -p tcp -m tcp --dport $httpsport -j ACCEPT
+            fi
+        fi
+    fi
+}
+
+setup_ubuntu_trusty () {
 
     # install initial batch of prerequisites:
     sudo DEBIAN_FRONTEND=noninteractive apt-get -y update
@@ -120,7 +148,36 @@ ubuntu_trusty () {
     sudo su -c "npm install -g bower"
 }
 
-invenio () {
+setup_centos6 () {
+
+    # install initial batch of prerequisites:
+    sudo yum update -y
+    sudo yum groupinstall -y "Development Tools"
+    (cd /tmp && wget http://download.fedoraproject.org/pub/epel/6/$(uname -m)/epel-release-6-8.noarch.rpm)
+    sudo rpm -ivh /tmp/epel-release-6-8.noarch.rpm
+    sudo yum install -y git wget redis python-devel \
+        mysql-devel libxml2-devel libxslt-devel \
+        python-pip python-virtualenvwrapper subversion
+    sudo pip install -U virtualenvwrapper pip
+    source $(which virtualenvwrapper.sh)
+
+    # install MySQL:
+    sudo yum install -y mysql-server
+    sudo /sbin/service mysqld start
+    sudo /sbin/chkconfig mysqld on
+    mysqladmin -u root password ''
+
+    # install nodejs:
+    sudo yum install -y npm
+
+    # install bower globally:
+    sudo su -c "npm install -g bower"
+
+    # configure iptables:
+    configure_iptables
+}
+
+install_invenio () {
 
     # create virtual environment:
     mkvirtualenv $CFG_INVENIO2_VIRTUAL_ENV
@@ -180,22 +237,39 @@ invenio () {
 
     # populate your site with demo records: demo
     inveniomanage demosite populate --packages=${overlaypackage}.base
-
 }
 
 main () {
-    os_distribution=$(lsb_release -i | cut -f 2)
-    os_release=$(lsb_release -r | cut -f 2)
+
+    # detect OS and call appropriate setup functions:
+    if hash lsb_release 2> /dev/null; then
+        os_distribution=$(lsb_release -i | cut -f 2)
+        os_release=$(lsb_release -r | cut -f 2)
+    elif [ -e /etc/redhat-release ]; then
+        os_distribution=$(cat /etc/redhat-release | cut -d ' ' -f 1)
+        os_release=$(cat /etc/redhat-release | grep -oE '[0-9]+\.' | cut -d. -f1)
+    else
+        os_distribution="UNDETECTED"
+        os_release="UNDETECTED"
+    fi
     if [ "$os_distribution" = "Ubuntu" ]; then
         if [ "$os_release" = "14.04" ]; then
-            ubuntu_trusty
-            invenio
+            setup_ubuntu_trusty
+            install_invenio
         else
-            echo "[ERROR] Sorry, unsupported release" $os_release "."
+            echo "[ERROR] Sorry, unsupported release ${os_release}."
+            echo "[ERROR] Please contact authors.  Exiting."
+        fi
+    elif [ "$os_distribution" = "CentOS" ]; then
+        if [ "$os_release" = "6" ]; then
+            setup_centos6
+            install_invenio
+        else
+            echo "[ERROR] Sorry, unsupported release ${os_release}."
             echo "[ERROR] Please contact authors.  Exiting."
         fi
     else
-        echo "[ERROR] Sorry, unsupported distribution" $os_distribution "."
+        echo "[ERROR] Sorry, unsupported distribution ${os_distribution}."
         echo "[ERROR] Please contact authors.  Exiting."
         exit 1;
     fi
