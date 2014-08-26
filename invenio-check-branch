@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Usage: invenio-check-branch some-base-branch some-topic-branch
+# Usage: invenio-check-branch some-base-branch some-topic-branch [--skip-headline-check]
 #
 # Run Invenio kwalitee tests for files changed in some-topic-branch
 # when compared to some-base-branch and compare the results.  Useful
@@ -40,7 +40,7 @@ if [ $# -eq 0 ]; then
     BRANCHNEW=$(git branch | grep \* | sed -e s/[\ \*]//g)
 else
     if [ $# -lt 2 ]; then
-        echo "[ERROR] Usage: $(basename $0) some-base-branch some-topic-branch"
+        echo "[ERROR] Usage: $(basename $0) some-base-branch some-topic-branch [--skip-headline-check]"
         exit 1
     fi
     BRANCHOLD=$1
@@ -63,25 +63,27 @@ if [ $nmerge -gt 0 ]; then
 fi
 
 # check commit log message headline length and formatting:
-problemfound=0
-while IFS=$'\n' read line; do
-    # check commit headline length:
-    if [ ${#line} -ge 92 ]; then
-        echo "[ERROR] Commit headline too long:" $line
-        problemfound=1
+if [[ "$@" != *"--skip-headline-check"* ]]; then
+    problemfound=0
+    while IFS=$'\n' read line; do
+        # check commit headline length:
+        if [ ${#line} -ge 92 ]; then
+            echo "[ERROR] Commit headline too long:" $line
+            problemfound=1
+        fi
+        # check commit headline formatting:
+        if [[ ! $line =~ ^[[:alnum:]]{40,40}[[:blank:]][[:alnum:]]+:[[:blank:]] ]]; then
+            echo "[ERROR] Commit headline does not start with module name:" $line
+            problemfound=1
+        fi
+        if [[ $line =~ \.$ ]]; then
+            echo "[ERROR] Commit headline ends with dot:" $line
+            problemfound=1
+        fi
+    done < <(git log $BRANCHOLD..$BRANCHNEW --format=oneline)
+    if [ $problemfound -ne 0 ]; then
+        exit 1
     fi
-    # check commit headline formatting:
-    if [[ ! $line =~ ^[[:alnum:]]{40,40}[[:blank:]][[:alnum:]]+:[[:blank:]] ]]; then
-        echo "[ERROR] Commit headline does not start with module name:" $line
-        problemfound=1
-    fi
-    if [[ $line =~ \.$ ]]; then
-        echo "[ERROR] Commit headline ends with dot:" $line
-        problemfound=1
-    fi
-done < <(git log $BRANCHOLD..$BRANCHNEW --format=oneline)
-if [ $problemfound -ne 0 ]; then
-    exit 1
 fi
 
 # set up temporary files:
