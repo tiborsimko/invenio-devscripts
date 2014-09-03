@@ -194,7 +194,7 @@ install_invenio () {
 
     # install Invenio requirements:
     cdvirtualenv src/invenio
-    pip install -r requirements.txt
+    pip install --process-dependency-links -e .[development]
 
     # compile I18N PO catalogue:
     python setup.py compile_catalog
@@ -203,6 +203,9 @@ install_invenio () {
     cdvirtualenv src/$(basename ${CFG_INVENIO2_REPOSITORY_OVERLAY})
     overlaypackage=$(dirname $(ls */config.py))
     pip install -r requirements.txt --exists-action i
+
+    # compile overlay I18N PO catalogue:
+    python setup.py compile_catalog
 
     # install JS/CSS assets using bower:
     inveniomanage bower -i bower-base.json > bower.json
