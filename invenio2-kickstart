@@ -39,7 +39,7 @@
 #   laptop> vim Vagrantfile # enter following content:
 #   Vagrant.configure("2") do |config|
 #     config.vm.box = "trusty64"
-#     config.vm.box_url = "http://cloud-images.ubuntu.com/vagrant/trusty/20140813/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+#     config.vm.box_url = "http://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
 #     config.vm.hostname = 'localhost.localdomain'
 #     config.vm.network :forwarded_port, host: 8080, guest: 8080
 #     config.vm.network :forwarded_port, host: 8443, guest: 8443
