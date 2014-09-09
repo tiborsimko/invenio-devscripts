@@ -81,6 +81,7 @@ CFG_INVENIO2_SITE_SECURE_URL=${CFG_INVENIO2_SITE_SECURE_URL:=http://0.0.0.0:8080
 CFG_INVENIO2_VIRTUAL_ENV=${CFG_INVENIO2_VIRTUAL_ENV:=invenio2}
 CFG_INVENIO2_DATABASE_USER=${CFG_INVENIO2_DATABASE_USER:=invenio2}
 CFG_INVENIO2_DATABASE_NAME=${CFG_INVENIO2_DATABASE_NAME:=invenio2}
+CFG_INVENIO2_DEMOSITE_POPULATE=${CFG_INVENIO2_DEMOSITE_POPULATE:=}
 
 # sanity check: CLI confirmation
 if [[ "$@" != *"--yes-i-know"* ]]; then
@@ -240,7 +241,7 @@ install_invenio () {
     honcho start &
 
     # populate your site with demo records: demo
-    inveniomanage demosite populate --packages=${overlaypackage}.base
+    inveniomanage demosite populate --packages=${overlaypackage}.base ${CFG_INVENIO2_DEMOSITE_POPULATE}
 }
 
 main () {
