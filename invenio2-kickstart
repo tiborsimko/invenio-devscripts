@@ -196,7 +196,7 @@ install_invenio () {
 
     # install Invenio requirements:
     cdvirtualenv src/invenio
-    pip install --process-dependency-links -e .[development]
+    pip install --process-dependency-links -e .[development,docs]
 
     # compile I18N PO catalogue:
     python setup.py compile_catalog
