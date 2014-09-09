@@ -235,6 +235,9 @@ install_invenio () {
     inveniomanage database init --user=root --yes-i-know
     inveniomanage database create
 
+    # build documentation:
+    inveniomanage documentation build
+
     # install honcho to run development celery/redis/web servers:
     cdvirtualenv src/invenio
     pip install honcho flower
@@ -243,6 +246,7 @@ install_invenio () {
     # populate your site with demo records:
     cdvirtualenv src/$(basename ${CFG_INVENIO2_REPOSITORY_OVERLAY})
     inveniomanage demosite populate --packages=${overlaypackage}.base ${CFG_INVENIO2_DEMOSITE_POPULATE}
+
 }
 
 main () {
