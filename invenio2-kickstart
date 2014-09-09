@@ -240,7 +240,8 @@ install_invenio () {
     pip install honcho flower
     honcho start &
 
-    # populate your site with demo records: demo
+    # populate your site with demo records:
+    cdvirtualenv src/$(basename ${CFG_INVENIO2_REPOSITORY_OVERLAY})
     inveniomanage demosite populate --packages=${overlaypackage}.base ${CFG_INVENIO2_DEMOSITE_POPULATE}
 }
 
