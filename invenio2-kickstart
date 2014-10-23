@@ -193,12 +193,8 @@ install_invenio () {
     git clone -b $CFG_INVENIO2_REPOSITORY_GENERAL_BRANCH $CFG_INVENIO2_REPOSITORY_GENERAL
     git clone -b $CFG_INVENIO2_REPOSITORY_OVERLAY_BRANCH $CFG_INVENIO2_REPOSITORY_OVERLAY
 
-    # install ipython
-    pip install ipython
-
     # install Invenio requirements:
     cdvirtualenv src/invenio
-    pip install --process-dependency-links -e .[development,docs]
 
     # compile I18N PO catalogue:
     python setup.py compile_catalog
@@ -212,7 +208,9 @@ install_invenio () {
     python setup.py compile_catalog
 
     # install JS/CSS assets using bower:
-    inveniomanage bower -i bower-base.json > bower.json
+    if [ ! -f bower-base.json  ]; then
+        inveniomanage bower -i bower-base.json > bower.json
+    fi
     CI=true bower install
 
     # create secret key for your installation:
@@ -232,6 +230,7 @@ install_invenio () {
     # collect JS/CSS assets into your instance directory:
     inveniomanage config set COLLECT_STORAGE invenio.ext.collect.storage.link
     inveniomanage collect
+    inveniomanage asset build --production
 
     # create database:
     inveniomanage database init --user=root --yes-i-know
@@ -242,7 +241,6 @@ install_invenio () {
 
     # install honcho to run development celery/redis/web servers:
     cdvirtualenv src/invenio
-    pip install honcho flower
     honcho start &
 
     # populate your site with demo records:
