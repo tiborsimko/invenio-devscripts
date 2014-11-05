@@ -250,7 +250,7 @@ install_invenio () {
     if [ "${CFG_INVENIO2_DEMOSITE_POPULATE_BEFORE}" != "" ]; then
         eval ${CFG_INVENIO2_DEMOSITE_POPULATE_BEFORE}
     fi
-    inveniomanage demosite populate --packages=${overlaypackage}.base ${CFG_INVENIO2_DEMOSITE_POPULATE}
+    inveniomanage demosite populate --packages=${overlaypackage}.base ${CFG_INVENIO2_DEMOSITE_POPULATE} --yes-i-know
 
 }
 
