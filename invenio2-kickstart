@@ -135,7 +135,8 @@ setup_ubuntu_trusty () {
         libmysqlclient-dev libxml2-dev libxslt-dev \
         libjpeg-dev libfreetype6-dev libtiff-dev \
         software-properties-common python-dev \
-        virtualenvwrapper subversion
+        virtualenvwrapper subversion libffi-dev \
+        libssl-dev
     sudo pip install -U virtualenvwrapper pip
     source $(which virtualenvwrapper.sh)
 
@@ -161,7 +162,8 @@ setup_centos6 () {
     sudo rpm -ivh /tmp/epel-release-6-8.noarch.rpm
     sudo yum install -y git wget redis python-devel \
         mysql-devel libxml2-devel libxslt-devel \
-        python-pip python-virtualenvwrapper subversion
+        python-pip python-virtualenvwrapper subversion \
+        libffi-devel openssl-devel
     sudo pip install -U virtualenvwrapper pip
     source $(which virtualenvwrapper.sh)
 
