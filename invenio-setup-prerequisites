@@ -6,7 +6,7 @@
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2013, 2014 CERN.
+# Copyright (C) 2013, 2014, 2015 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -152,8 +152,9 @@ debian_install_packages () {
     else
         sudo apt-get install -y libhdf5-serial-dev
     fi
-    sudo apt-get install -y python-pip
-    sudo pip install -U pip
+    if ! type pip > /dev/null 2>&1; then
+        sudo apt-get install -y python-pip
+    fi
     olddir=`pwd`
     allow="--allow-all-external --allow-unverified gnuplot-py --allow-unverified h5py"
     cd $CFG_INVENIO_SRCDIR
