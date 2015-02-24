@@ -144,6 +144,10 @@ debian_install_packages () {
     else
         sudo apt-get install -y libreoffice
     fi
+    # python-uno does not always exist, so be gentle:
+    if sudo apt-get install -y -s python-uno; then
+        sudo apt-get install -y python-uno
+    fi
     # restart Redis explicitly; useful for Travis-CI VMs
     sudo /usr/sbin/service redis-server restart
     # installing libhdf5-dev is OS version dependent:
