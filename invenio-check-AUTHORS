@@ -1,8 +1,9 @@
 #!/usr/bin/env python
+# -*- mode: python; coding: utf-8; -*-
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2011, 2012 CERN.
+# Copyright (C) 2011, 2012, 2015 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,7 +37,9 @@ CFG_INVENIO_SRCDIR = os.environ.get('CFG_INVENIO_SRCDIR',
 # or THANKS file but were spelled differently in some of git commits:
 CFG_FALSE_POSITIVES = ['Travis C. Brooks',
                        'valkyrie',
-                       'Javier Martin Montull']
+                       'Javier Martin Montull',
+                       'Theodoros Theodoropoulos',
+                       'Wojciech Ziółek']
 
 # go to Invenio source directory:
 os.chdir(CFG_INVENIO_SRCDIR)
