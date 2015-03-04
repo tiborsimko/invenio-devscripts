@@ -39,6 +39,15 @@ CFG_FALSE_POSITIVES = ['Travis C. Brooks',
                        'valkyrie',
                        'Javier Martin Montull',
                        'Theodoros Theodoropoulos',
+                       'Jaime Garcia',
+                       'Jaime García',
+                       'Kennethhole',
+                       'kneczaj',
+                       'pbroz',
+                       'romanchyla',
+                       'Adrian Tudor Panescu',
+                       'Charalampos Tzovanakis',
+                       'Pedro Gaudêncio',
                        'Wojciech Ziółek']
 
 # go to Invenio source directory:
