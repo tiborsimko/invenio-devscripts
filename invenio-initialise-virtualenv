@@ -3,11 +3,10 @@
 # A helper devscript to initialise virtualenv for Invenio development.
 # Assumes certain sudo rights.  Typical usage:
 #
-#   $ cd ~/private/src/invenio
-#   $ git checkout master
-#   $ mkvirtualenv --system-site-packages invenio-master
-#   $ invenio-initialise-virtualenv invenio-master --yes-i-know
-#   $ deactivate && workon invenio-master
+#   $ # Invenio sources are cloned in ~/private/src/invenio
+#   $ mkvirtualenv invenio-maint-1.0
+#   $ invenio-initialise-virtualenv --yes-i-know
+#   $ deactivate && workon invenio-maint-1.0
 #   $ invenio-recreate-demo-site --yes-i-know
 #
 # For more information, see
@@ -15,7 +14,7 @@
 #
 # Tibor Simko <tibor.simko@cern.ch>
 #
-# Copyright (C) 2012, 2013, 2014 CERN.
+# Copyright (C) 2012, 2013, 2014, 2015 CERN.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -37,7 +36,7 @@ CFG_INVENIO_HOSTNAME=${CFG_INVENIO_HOSTNAME:=pcuds06}
 CFG_INVENIO_DOMAINNAME=${CFG_INVENIO_DOMAINNAME:=cern.ch}
 CFG_INVENIO_PORT_HTTP=${CFG_INVENIO_PORT_HTTP:=80}
 CFG_INVENIO_PORT_HTTPS=${CFG_INVENIO_PORT_HTTPS:=443}
-CFG_INVENIO_USER=${CFG_INVENIO_USER:=www-data}
+CFG_INVENIO_USER=${CFG_INVENIO_USER:=$(whoami)}
 CFG_INVENIO_ADMIN=${CFG_INVENIO_ADMIN:=tibor.simko@cern.ch}
 CFG_INVENIO_DATABASE_NAME=${CFG_INVENIO_DATABASE_NAME:=invenio}
 CFG_INVENIO_DATABASE_USER=${CFG_INVENIO_DATABASE_USER:=invenio}
@@ -47,16 +46,23 @@ CFG_INVENIO_MYSQLCTL=${CFG_INVENIO_MYSQLCTL:=/etc/init.d/mysql}
 CFG_INVENIO_VIRTUALENVS=${CFG_INVENIO_VIRTUALENVS:=$HOME/.virtualenvs}
 
 # sanity check: virtualenv name
-VEHOME=$CFG_INVENIO_VIRTUALENVS
-VENAME=$1
-if [ "x$VENAME" = "x" ]; then
-    echo "[ERROR] Unknown desired virtualenv name."
-    echo "[INFO] Please run '$(basename $0) invenio-master' or the like."
+if [ "x$VIRTUAL_ENV" = "x" ]; then
+    echo "[ERROR] Not running from within some virtual environment."
+    echo "[ERROR] Please run 'mkvirtualenv invenio-maint-1.0' or similar first."
     exit
 fi
+VEHOME=$CFG_INVENIO_VIRTUALENVS
+VENAME=$(basename $VIRTUAL_ENV)
 
 # derive DB name out of VE name:
 DBNAME=$(echo $VENAME | sed "s/\-//g" | sed "s/\.//g")
+
+# derive Invenio branch name out of VE name:
+BRANCHNAME=$(echo $VENAME | sed "s/^invenio-//g")
+
+# helper variables derived out of VE location:
+VESRCDIR=$VEHOME/$VENAME/src/invenio
+VEDSTDIR=$VEHOME/$VENAME/opt/invenio
 
 # sanity check: CLI confirmation
 if [[ "$@" != *"--yes-i-know"* ]]; then
@@ -74,13 +80,11 @@ if [ "`hostname -s`" != "$CFG_INVENIO_HOSTNAME" ]; then
     exit
 fi
 
-# verify whether the wanted virtualenv already exist:
-if [ ! -d "$VEHOME/$VENAME" ]; then
-    echo "[ERROR] Virtualenv '$VENAME' does not exist yet."
-    echo "[INFO] Please create it by running one of the following first:"
-    echo "[INFO] (a) 'mkvirtualenv --system-site-packages $VENAME' if you want to use system Python (fast, easy on Apache)"
-    echo "[INFO] (b) 'mkvirtualenv --no-site-packages $VENAME' if you want to use shielded pip (slow, harder with Apache)"
-    echo "[INFO] After that, rerun me again."
+# verify whether this virtual environment wasn't already initialised:
+if [ -d "$VEHOME/$VENAME/opt" ]; then
+    echo "[ERROR] It seems that directory $VEHOME/$VENAME/opt already exists."
+    echo "[ERROR] Trying to initialise a venv that was already initialised?"
+    echo "[ERROR] Exiting."
     exit
 fi
 
@@ -90,70 +94,84 @@ cat > $VEHOME/$VENAME/bin/postactivate <<EOF1
 #!/bin/bash
 
 # set up configuration variables:
+export CFG_INVENIO_SRCDIR=$VESRCDIR
+export CFG_INVENIO_PREFIX=$VEDSTDIR
+export CFG_INVENIO_USER='$CFG_INVENIO_USER'
 export CFG_INVENIO_DATABASE_NAME='$DBNAME'
 export CFG_INVENIO_DATABASE_USER='$DBNAME'
 export CFG_INVENIO_DATABASE_PASS='$CFG_INVENIO_DATABASE_PASS'
 
-# amend invenio symlink:
-sudo service apache2 stop
-sudo rm -f /opt/invenio
-sudo ln -s $VEHOME/$VENAME/opt/invenio /opt/invenio
-sudo service apache2 start
+# amend Apache vhost symlinks:
+sudo systemctl stop apache2
+sudo rm -f /etc/apache2/sites-enabled/invenio.conf
+sudo ln -s $VEDSTDIR/etc/apache/invenio-apache-vhost.conf \
+           /etc/apache2/sites-enabled/invenio.conf
+sudo rm -f /etc/apache2/sites-enabled/invenio-ssl.conf
+sudo ln -s $VEDSTDIR/etc/apache/invenio-apache-vhost-ssl.conf \
+           /etc/apache2/sites-enabled/invenio-ssl.conf
+sudo systemctl start apache2
+
+# set PATH:
+export PATH=$VEDSTDIR/bin:\$PATH
+
+# switch directory:
+cdvirtualenv src/invenio
 
 # end of file
 EOF1
+chmod u+x $VEHOME/$VENAME/bin/postactivate
 
 echo "[INFO] Creating postdeactivate hook..."
 cat > $VEHOME/$VENAME/bin/postdeactivate <<EOF2
 #!/bin/bash
 
-sudo service apache2 stop
-sudo rm /opt/invenio
+# unset variables:
+unset CFG_INVENIO_SRCDIR
+unset CFG_INVENIO_PREFIX
+unset CFG_INVENIO_USER
+unset CFG_INVENIO_DATABASE_NAME
+unset CFG_INVENIO_DATABASE_USER
+unset CFG_INVENIO_DATABASE_PASS
+
+# remove Apache vhost symlinks:
+sudo systemctl stop apache2
+sudo rm -f /etc/apache2/sites-enabled/invenio.conf
+sudo rm -f /etc/apache2/sites-enabled/invenio-ssl.conf
+
+# switch directory:
+cd $HOME
 
 # end of file
 EOF2
+chmod u+x $VEHOME/$VENAME/bin/postdeactivate
 
 echo "[INFO] Setting up database..."
 echo "CREATE DATABASE $DBNAME DEFAULT CHARACTER SET utf8; GRANT ALL PRIVILEGES ON $DBNAME.* TO $DBNAME@localhost IDENTIFIED BY '$CFG_INVENIO_DATABASE_PASS';" | mysql -u root -B
 
-echo "[INFO] Installing pre-requisites..."
-if [[ "$@" = *"--use-pip"* ]]; then
-    pip install ipython
-    pip install pylint
-    pip install pyflakes
-    pip install epydoc
-    pip install BeautifulSoup
-    pip install uTidylib
-    pip install 'MySQL-python==1.2.3'
-    pip install rdflib
-    pip install reportlab
-    pip install 'python-dateutil<=1.9999'
-    pip install python-magic
-    pip install numpy
-    pip install simplejson
-    pip install gnuplot-py
-    pip install pyPdf
-    pip install chardet
-    pip install python-Levenshtein
-    pip install PyStemmer
-    pip install lxml
-    pip install mechanize
-    pip install selenium
-    pip install pep8
-    pip install http://www.reportlab.com/ftp/pyRXP-1.16-daily-unix.tar.gz
-    pip install ftp://xmlsoft.org/libxml2/python/libxml2-python-2.6.21.tar.gz
-fi
+echo "[INFO] Cloning Invenio sources..."
+git-new-workdir $CFG_INVENIO_SRCDIR $VESRCDIR $BRANCHNAME
 
-echo "[INFO] Setting up /opt/invenio location..."
-if [ ! -d $VEHOME/$VENAME/opt/invenio ]; then
-    mkdir -p $VEHOME/$VENAME/opt/invenio
-    sudo chown $CFG_INVENIO_USER $VEHOME/$VENAME/opt/invenio
-fi
+echo "[INFO] Creating Invenio target directory..."
+mkdir -p $VEDSTDIR
+sudo chown -R $CFG_INVENIO_USER $VEDSTDIR
 
-echo "[INFO] Setting up site-packages symlink..."
+echo "[INFO] Setting up Invenio site-packages symlink..."
 SITEPACKAGES=$($VEHOME/$VENAME/bin/python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
-if [ ! -h $SITEPACKAGES/invenio ]; then
-    ln -s $VEHOME/$VENAME/opt/invenio/lib/python/invenio $SITEPACKAGES/invenio
+ln -s $VEDSTDIR/lib/python/invenio $SITEPACKAGES/invenio
+
+echo "[INFO] Installing Python pre-requisites..."
+if [[ "$@" != *"--skip-pip"* ]]; then
+    if [ -e $VESRCDIR/requirements.txt ]; then
+        pip install -r $VESRCDIR/requirements.txt
+    fi
+    set +o errexit # on Debian Jessie, we need to specify HDF5_DIR:
+    HDF5_DIR=$(dirname $(locate libhdf5.so | head -1)) pip install cython h5py
+    set -o errexit
+    if [ -e $VESRCDIR/requirements-extras.txt ]; then
+        pip install -r $VESRCDIR/requirements-extras.txt --allow-all-external --allow-unverified gnuplot-py
+    fi
 fi
 
-echo "[INFO] Done. You may want to run 'deactivate && workon $VENAME' and 'invenio-recreate-demo-site --yes-i-know' now."
+echo "[INFO] Done. You may want to run now:"
+echo "[INFO] $ deactivate && workon $VENAME"
+echo "[INFO] $ invenio-recreate-demo-site --yes-i-know"

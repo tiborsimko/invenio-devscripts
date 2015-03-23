@@ -268,11 +268,10 @@ Here is how you can create a new virtualenv environment called
 fresh new Invenio demo site on it:
 
 #+BEGIN_SRC sh
-cd ~/private/src/invenio
-git checkout master
-mkvirtualenv --system-site-packages invenio-master
-invenio-initialise-virtualenv invenio-master --yes-i-know
-deactivate && workon invenio-master
+# Invenio sources are cloned in ~/private/src/invenio
+mkvirtualenv invenio-maint-1.0
+invenio-initialise-virtualenv --yes-i-know
+deactivate && workon invenio-maint-1.0
 invenio-recreate-demo-site --yes-i-know
 #+END_SRC
 
