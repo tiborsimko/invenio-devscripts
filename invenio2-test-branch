@@ -1,0 +1,117 @@
+#!/bin/sh
+#
+# >>> About
+#
+# This helper devscript installs a fresh virtual machine and it provides a script
+# to easily test a Invenio 2.0 development branch.
+#
+# Tested on: Debian 7 amd64
+#
+# For more information, see "Usage" section below as well as
+# <https://github.com/tiborsimko/invenio-devscripts>.
+#
+# >>> Copyright
+#
+# Leonardo Rossi <leonardo.r@cern.ch>
+#
+# Copyright (C) 2014 CERN.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, see <http://www.gnu.org/licenses/>.
+#
+# >>> Usage
+#
+# First, create a empty directory where initialize the virtual machine
+# and enter inside
+#
+#   laptop> mkdir mytestvm
+#   laptop> cd mytestvm
+#
+# Second, start the script with two parameters: repository url and branch name
+#
+#   laptop> /path/to/script/invenio2-test-branch https://server.name/path/to/repository/myrepository.git mybranch
+#   vm> ./test-branch.sh
+#
+
+# Test arguments
+if [ $# -le 1 ]; then
+  echo "Usage: $0 repository branch-name"
+  exit
+fi
+
+REPO_URL=$1
+BRANCH=$2
+TIMESTAMP=$(date +%s)
+SCRIPT_DIR=`dirname $0`
+
+# Test if repository is valid
+git ls-remote --exit-code "$REPO_URL" >/dev/null 2>&1
+if [ "$?" -ne 0 ]; then
+    echo "[ERROR] Unable to read from '$REPO_URL'"
+    exit 1;
+fi
+
+# Test if the branch exist
+git ls-remote --exit-code "$REPO_URL" | grep $BRANCH >/dev/null 2>&1
+if [ "$?" -ne 0 ]; then
+    echo "[ERROR] Unable to find the '$BRANCH'"
+    exit 1;
+fi
+
+# Create VagrantFile
+cat > Vagrantfile <<EOF
+Vagrant.configure("2") do |config|
+  config.vm.box = "trusty64"
+  config.vm.box_url = "http://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+  config.vm.hostname = 'localhost.localdomain'
+  config.vm.network :forwarded_port, host: 8080, guest: 8080, auto_correct: true
+  config.vm.network :forwarded_port, host: 8443, guest: 8443, auto_correct: true
+  config.vm.provider :virtualbox do |vb|
+    vb.customize ["modifyvm", :id, "--memory", "2048"]
+  end
+  config.vm.provision :shell, path: "provisioner.sh"
+end
+EOF
+
+# Create provisioner
+cat > provisioner.sh <<EOF_SCRIPT
+#!/usr/bin/env bash
+
+cat > /home/vagrant/test-branch.sh<<EOF
+/vagrant/invenio2-kickstart --yes-i-know --yes-i-really-know
+source \\\$(which virtualenvwrapper.sh)
+workon invenio2
+cdvirtualenv src/invenio
+git remote add branch2test $REPO_URL
+git fetch branch2test
+git checkout $BRANCH
+pip install -r requirements.txt --exists-action i
+pip install \\\`pip freeze -l | cut --fields=1 -d = -|grep -v ^-e\\\` --upgrade
+pip install -e .
+sudo pip install python-gettext
+inveniomanage database init --yes-i-know
+inveniomanage database create
+python setup.py test
+EOF
+chmod +x /home/vagrant/test-branch.sh
+EOF_SCRIPT
+
+# Copy invenio2-kickstart
+cp $SCRIPT_DIR/invenio2-kickstart .
+
+# Setup vagrant
+vagrant up
+
+# Connect to the vm
+vagrant ssh
+
